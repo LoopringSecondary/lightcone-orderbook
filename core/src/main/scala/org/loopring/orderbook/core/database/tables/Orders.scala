@@ -40,39 +40,24 @@ class Orders(tag: Tag) extends BaseTable[Order](tag, "ORDERS") {
   def v = column[Int]("v", O.SqlType("TINYINT(4)"))
   def r = column[String]("r", O.SqlType("VARCHAR(128)"))
   def s = column[String]("s", O.SqlType("VARCHAR(128)"))
-  def powNonce = column[Long]("pow_nonce")
-  def updatedBlock = column[Long]("updated_block")
   def dealtAmountS = column[String]("dealt_amount_s", O.SqlType("VARCHAR(64)"))
   def dealtAmountB = column[String]("dealt_amount_b", O.SqlType("VARCHAR(64)"))
-  def cancelledAmountS = column[String]("cancelled_amount_s", O.SqlType("VARCHAR(64)"))
-  def cancelledAmountB = column[String]("cancelled_amount_b", O.SqlType("VARCHAR(64)"))
-  def splitAmountS = column[String]("split_amount_s", O.SqlType("VARCHAR(64)"))
-  def splitAmountB = column[String]("split_amount_b", O.SqlType("VARCHAR(64)"))
+  def delayCause = column[String]("delay_cause", O.SqlType("VARCHAR(64)"))
   def status = column[String]("status", O.SqlType("VARCHAR(64)"))
-  //  def minerBlockMark = column[Long]("miner_block_mark")
-  def broadcastTime = column[Int]("broadcast_time")
   def market = column[String]("market", O.SqlType("VARCHAR(32)"))
   def side = column[String]("side", O.SqlType("VARCHAR(32)"))
   def price = column[Double]("price", O.SqlType("DECIMAL(28,16)"))
-  def orderType = column[String]("order_type", O.SqlType("VARCHAR(32)"))
 
   def * = (
     id,
     rawOrderProjection,
-    updatedBlock,
     dealtAmountS,
     dealtAmountB,
-    splitAmountS,
-    splitAmountB,
-    cancelledAmountS,
-    cancelledAmountB,
+    delayCause,
     status,
-    broadcastTime,
-    price,
-    powNonce,
     market,
     side,
-    orderType,
+    price,
     createdAt,
     updatedAt) <> (extendTupled, unwrapOption)
 
@@ -100,26 +85,19 @@ class Orders(tag: Tag) extends BaseTable[Order](tag, "ORDERS") {
       (RawOrder.apply _).tupled,
       RawOrder.unapply)
 
-  private def extendTupled = (i: Tuple18[Long, RawOrder, Long, String, String, String, String, String, String, String, Int, Double, Long, String, String, String, Long, Long]) ⇒
+  private def extendTupled = (i: Tuple11[Long, RawOrder, String, String, String, String, String, String, Double, Long, Long]) ⇒
     Order.apply(
       i._1,
       Some(i._2),
       i._3,
       i._4,
       i._5,
-      i._6,
+      OrderStatus.fromName(i._6).getOrElse(OrderStatus.ORDER_STATUS_UNKNOWN),
       i._7,
       i._8,
       i._9,
-      Some(wrapStatus(i._10)),
-      i._11,
-      i._12,
-      i._13,
-      i._14,
-      i._15,
-      wrapType(i._16),
-      i._17,
-      i._18)
+      i._10,
+      i._11)
 
   private def unwrapOption(order: Order) = {
     val unapplyOrder = Order.unapply(order).get
@@ -129,45 +107,13 @@ class Orders(tag: Tag) extends BaseTable[Order](tag, "ORDERS") {
       unapplyOrder._3,
       unapplyOrder._4,
       unapplyOrder._5,
-      unapplyOrder._6,
+      unapplyOrder._6.name,
       unapplyOrder._7,
       unapplyOrder._8,
       unapplyOrder._9,
-      unwrapStatus(unapplyOrder._10),
-      unapplyOrder._11,
-      unapplyOrder._12,
-      unapplyOrder._13,
-      unapplyOrder._14,
-      unapplyOrder._15,
-      unapplyOrder._16.name,
-      unapplyOrder._17,
-      unapplyOrder._18))
-
+      unapplyOrder._10,
+      unapplyOrder._11))
   }
 
   def idx = index("idx_order_hash", orderHash, unique = true)
-
-  def wrapStatus(src: String): OrderStatus =
-    OrderLevel1Status.fromName(src) match {
-      case Some(value) ⇒ OrderStatus(
-        value,
-        OrderLevel2Status.ORDER_STATUS_LEVEL2_UNKNOWN,
-        OrderLevel3Status.ORDER_STATUS_LEVEL3_UNKNOWN)
-      case None ⇒ OrderStatus(
-        OrderLevel1Status.ORDER_STATUS_LEVEL1_UNKNOWN,
-        OrderLevel2Status.ORDER_STATUS_LEVEL2_UNKNOWN,
-        OrderLevel3Status.ORDER_STATUS_LEVEL3_UNKNOWN)
-    }
-
-  def unwrapStatus(status: Option[OrderStatus]): String =
-    status match {
-      case Some(value) ⇒ value.level1Status.name
-      case None ⇒ OrderLevel1Status.ORDER_STATUS_LEVEL1_UNKNOWN.name
-    }
-
-  def wrapType(src: String): OrderType =
-    OrderType.fromName(src) match {
-      case Some(value) ⇒ value
-      case None ⇒ OrderType.UNKNOWN
-    }
 }

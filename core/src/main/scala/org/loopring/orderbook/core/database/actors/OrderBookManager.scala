@@ -21,11 +21,9 @@ package org.loopring.orderbook.core.database.actors
 import akka.actor.Actor
 import org.loopring.orderbook.proto.order.Order
 
-class OrderBookManager(tokenS:String, tokenB:String) extends Actor {
-
-
+class OrderBookManager(tokenS: String, tokenB: String) extends Actor {
 
   override def receive: Receive = {
-    case order:Order ⇒
+    case order: Order ⇒
   }
 }

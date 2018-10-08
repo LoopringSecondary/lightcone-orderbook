@@ -20,15 +20,17 @@ import org.loopring.orderbook.core.database.OrderDatabase
 import org.loopring.orderbook.core.database.base._
 import org.loopring.orderbook.core.database.tables._
 import org.loopring.orderbook.proto.order._
-import slick.dbio.Effect
 import slick.jdbc.MySQLProfile.api._
-import slick.sql.FixedSqlAction
 
 import scala.concurrent.Future
 
-case class QueryCondition(delegateAddress: String = "", owner: Option[String] = None,
-  market: Option[String] = None, status: Seq[String] = Seq(), orderHashes: Seq[String] = Seq(),
-  orderType: Option[String] = None, side: Option[String] = None)
+case class QueryCondition(
+  delegateAddress: String = "",
+  owner: Option[String] = None,
+  market: Option[String] = None,
+  status: Seq[String] = Seq(),
+  orderHashes: Seq[String] = Seq(),
+  side: Option[String] = None)
 
 trait OrdersDal extends BaseDalImpl[Orders, Order] {
   def getOrder(orderHash: String): Future[Option[Order]]
@@ -37,10 +39,6 @@ trait OrdersDal extends BaseDalImpl[Orders, Order] {
   def getOrders(condition: QueryCondition): Future[Seq[Order]]
   def getOrdersWithCount(condition: QueryCondition, skip: Int, take: Int): (Future[Seq[Order]], Future[Int])
   def saveOrder(order: Order): Future[Int]
-  def softCancelByMarket(owner: String, market: String): FixedSqlAction[Int, NoStream, Effect.Write]
-  def softCancelByOwner(owner: String): FixedSqlAction[Int, NoStream, Effect.Write]
-  def softCancelByTime(owner: String, cutoff: Long): FixedSqlAction[Int, NoStream, Effect.Write]
-  def softCancelByHash(orderHash: String): FixedSqlAction[Int, NoStream, Effect.Write]
   def unwrapCondition(condition: QueryCondition): Query[Orders, Order, Seq]
 }
 
@@ -86,48 +84,11 @@ class OrdersDalImpl(val module: OrderDatabase) extends OrdersDal {
     (db.run(action.drop(skip).take(take).result), db.run(action.length.result))
   }
 
-  def softCancelByMarket(owner: String, market: String): FixedSqlAction[Int, NoStream, Effect.Write] = {
-    query
-      .filter(_.owner === owner)
-      .filter(_.market === market)
-      .filter(_.status === OrderLevel1Status.ORDER_STATUS_NEW.name)
-      .map(o ⇒ (o.status, o.updatedAt))
-      .update(OrderLevel1Status.ORDER_STATUS_SOFT_CANCELLED.name, System.currentTimeMillis / 1000)
-  }
-
-  def softCancelByOwner(owner: String): FixedSqlAction[Int, NoStream, Effect.Write] = {
-    query
-      .filter(_.owner === owner)
-      .filter(_.status === OrderLevel1Status.ORDER_STATUS_NEW.name)
-      .map(o ⇒ (o.status, o.updatedAt))
-      .update(OrderLevel1Status.ORDER_STATUS_SOFT_CANCELLED.name, System.currentTimeMillis / 1000)
-  }
-
-  def softCancelByTime(owner: String, cutoff: Long): FixedSqlAction[Int, NoStream, Effect.Write] = {
-    query
-      .filter(_.owner === owner)
-      .filter(_.validUntil >= cutoff)
-      .filter(_.status === OrderLevel1Status.ORDER_STATUS_NEW.name)
-      .map(o ⇒ (o.status, o.updatedAt))
-      .update(OrderLevel1Status.ORDER_STATUS_SOFT_CANCELLED.name, System.currentTimeMillis / 1000)
-  }
-
-  def softCancelByHash(orderHash: String): FixedSqlAction[Int, NoStream, Effect.Write] = {
-    query
-      .filter(_.orderHash === orderHash)
-      .filter(_.status === OrderLevel1Status.ORDER_STATUS_NEW.name)
-      .map(o ⇒ (o.status, o.updatedAt))
-      .update(OrderLevel1Status.ORDER_STATUS_SOFT_CANCELLED.name, System.currentTimeMillis / 1000)
-  }
-
   override def unwrapCondition(condition: QueryCondition): Query[Orders, Order, Seq] = {
 
     query
       .filter { o ⇒
         condition.owner.map(o.owner === _).getOrElse(true: Rep[Boolean])
-      }
-      .filter { o ⇒
-        condition.orderType.map(o.orderType === _).getOrElse(true: Rep[Boolean])
       }
       .filter { o ⇒
         condition.side.map(o.side === _).getOrElse(true: Rep[Boolean])
