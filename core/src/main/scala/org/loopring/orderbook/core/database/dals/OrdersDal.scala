@@ -27,8 +27,8 @@ import slick.sql.FixedSqlAction
 import scala.concurrent.Future
 
 case class QueryCondition(delegateAddress: String = "", owner: Option[String] = None,
-                          market: Option[String] = None, status: Seq[String] = Seq(), orderHashes: Seq[String] = Seq(),
-                          orderType: Option[String] = None, side: Option[String] = None)
+  market: Option[String] = None, status: Seq[String] = Seq(), orderHashes: Seq[String] = Seq(),
+  orderType: Option[String] = None, side: Option[String] = None)
 
 trait OrdersDal extends BaseDalImpl[Orders, Order] {
   def getOrder(orderHash: String): Future[Option[Order]]

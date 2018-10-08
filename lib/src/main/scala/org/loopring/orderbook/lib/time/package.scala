@@ -14,25 +14,18 @@
  * limitations under the License.
  */
 
-package org.loopring.orderbook.core.database
+package org.loopring.orderbook.lib
 
-import org.loopring.orderbook.core.database.dals._
-import org.loopring.orderbook.lib.time.TimeProvider
-import slick.basic._
-import slick.jdbc.JdbcProfile
+import java.sql.Timestamp
 
-import scala.concurrent.ExecutionContext
+import org.joda.time.Period
 
-trait OrderDatabase {
-  val dbConfig: DatabaseConfig[JdbcProfile]
-  val timeProvider: TimeProvider
+package object time {
+  implicit class RichSqlTimestamp(timestamp: Timestamp) {
+    def +(millis: Long) = new Timestamp(timestamp.getTime + millis)
+    def -(millis: Long) = new Timestamp(timestamp.getTime - millis)
 
-  def profile: JdbcProfile = dbConfig.profile
-  def db: BasicProfile#Backend#Database = dbConfig.db
-  def dbec: ExecutionContext
-  def displayDDL(): Unit
-  def generateDDL(): Unit
-
-  // table dal
-  val orders: OrdersDal
+    def +(p: Period) = new Timestamp(timestamp.getTime + p.getMillis)
+    def -(p: Period) = new Timestamp(timestamp.getTime - p.getMillis)
+  }
 }

@@ -14,25 +14,18 @@
  * limitations under the License.
  */
 
-package org.loopring.orderbook.core.database
+package org.loopring.orderbook.lib.time
 
-import org.loopring.orderbook.core.database.dals._
-import org.loopring.orderbook.lib.time.TimeProvider
-import slick.basic._
-import slick.jdbc.JdbcProfile
+import java.sql.Timestamp
+import java.text.SimpleDateFormat
 
-import scala.concurrent.ExecutionContext
+trait TimeFormatter {
+  def format(timeMillis: Long): String
+  def format(timestamp: Timestamp): String = format(timestamp.getTime)
+}
 
-trait OrderDatabase {
-  val dbConfig: DatabaseConfig[JdbcProfile]
-  val timeProvider: TimeProvider
+final class SimpleTimeFormatter extends TimeFormatter {
+  private val simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
 
-  def profile: JdbcProfile = dbConfig.profile
-  def db: BasicProfile#Backend#Database = dbConfig.db
-  def dbec: ExecutionContext
-  def displayDDL(): Unit
-  def generateDDL(): Unit
-
-  // table dal
-  val orders: OrdersDal
+  def format(timeMillis: Long) = simpleDateFormat.format(timeMillis)
 }

@@ -74,8 +74,7 @@ class Orders(tag: Tag) extends BaseTable[Order](tag, "ORDERS") {
     side,
     orderType,
     createdAt,
-    updatedAt
-  ) <> (extendTupled, unwrapOption)
+    updatedAt) <> (extendTupled, unwrapOption)
 
   def rawOrderProjection = (
     protocol,
@@ -97,11 +96,9 @@ class Orders(tag: Tag) extends BaseTable[Order](tag, "ORDERS") {
     v,
     s,
     s,
-    orderHash
-  ) <> (
-    (RawOrder.apply _).tupled,
-    RawOrder.unapply
-  )
+    orderHash) <> (
+      (RawOrder.apply _).tupled,
+      RawOrder.unapply)
 
   private def extendTupled = (i: Tuple18[Long, RawOrder, Long, String, String, String, String, String, String, String, Int, Double, Long, String, String, String, Long, Long]) ⇒
     Order.apply(
@@ -122,8 +119,7 @@ class Orders(tag: Tag) extends BaseTable[Order](tag, "ORDERS") {
       i._15,
       wrapType(i._16),
       i._17,
-      i._18
-    )
+      i._18)
 
   private def unwrapOption(order: Order) = {
     val unapplyOrder = Order.unapply(order).get
@@ -145,8 +141,7 @@ class Orders(tag: Tag) extends BaseTable[Order](tag, "ORDERS") {
       unapplyOrder._15,
       unapplyOrder._16.name,
       unapplyOrder._17,
-      unapplyOrder._18
-    ))
+      unapplyOrder._18))
 
   }
 
@@ -157,24 +152,22 @@ class Orders(tag: Tag) extends BaseTable[Order](tag, "ORDERS") {
       case Some(value) ⇒ OrderStatus(
         value,
         OrderLevel2Status.ORDER_STATUS_LEVEL2_UNKNOWN,
-        OrderLevel3Status.ORDER_STATUS_LEVEL3_UNKNOWN
-      )
+        OrderLevel3Status.ORDER_STATUS_LEVEL3_UNKNOWN)
       case None ⇒ OrderStatus(
         OrderLevel1Status.ORDER_STATUS_LEVEL1_UNKNOWN,
         OrderLevel2Status.ORDER_STATUS_LEVEL2_UNKNOWN,
-        OrderLevel3Status.ORDER_STATUS_LEVEL3_UNKNOWN
-      )
+        OrderLevel3Status.ORDER_STATUS_LEVEL3_UNKNOWN)
     }
 
   def unwrapStatus(status: Option[OrderStatus]): String =
     status match {
       case Some(value) ⇒ value.level1Status.name
-      case None        ⇒ OrderLevel1Status.ORDER_STATUS_LEVEL1_UNKNOWN.name
+      case None ⇒ OrderLevel1Status.ORDER_STATUS_LEVEL1_UNKNOWN.name
     }
 
   def wrapType(src: String): OrderType =
     OrderType.fromName(src) match {
       case Some(value) ⇒ value
-      case None        ⇒ OrderType.UNKNOWN
+      case None ⇒ OrderType.UNKNOWN
     }
 }

@@ -70,6 +70,7 @@ lazy val lib = (project in file("lib"))
 
 lazy val core = (project in file("core"))
   .dependsOn(proto)
+  .dependsOn(lib)
   .settings(
     libraryDependencies ++= commonDependency,
     libraryDependencies ++= akkaDenepdencies)
