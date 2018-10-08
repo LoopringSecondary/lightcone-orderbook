@@ -99,3 +99,11 @@ message RawOrder {
     string s = 18;
     string hash = 19;
 }
+
+message Order {
+   RawOrder raw_order = 1;
+   string dealt_amount_s = 2;
+   string dealt_amount_b = 3;
+   int32 delayed = 4;
+   string delay_cause = 5;
+}
