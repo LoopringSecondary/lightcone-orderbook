@@ -19,11 +19,61 @@
 package org.loopring.orderbook.core.database.actors
 
 import akka.actor.Actor
-import org.loopring.orderbook.proto.order.Order
+import org.loopring.orderbook.lib.math.Rational
+import org.loopring.orderbook.proto.order.{Order, RawOrder}
+import org.loopring.orderbook.lib.etypes._
 
-class OrderBookManager(tokenS: String, tokenB: String) extends Actor {
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+
+case class OrderWithStatus(order:Order, deferredTime:Long)
+
+class OrderBook {
+  var ordersOfPrice = mutable.TreeMap[Rational, Set[String]]()
+  var orders = mutable.HashMap[String, OrderWithStatus]()
+  var delayedMap = mutable.TreeMap[Rational, String]()
+  var settlingOrders = Map[String, Int]()
+  var validSinceOrders = Set[String]()
+
+  def updateOrAddOrder(orderWithStatus: OrderWithStatus):Unit = {
+    val now = System.currentTimeMillis()/1e6
+    val rawOrder = orderWithStatus.order.rawOrder.get
+    if (rawOrder.validUntil <= now) {
+      return
+    }
+    val sellPrice = Rational(rawOrder.amountS.asBigInt, rawOrder.amountB.asBigInt)
+    if (rawOrder.validSince > now) {
+      validSinceOrders.synchronized(validSinceOrders + rawOrder.hash.toLowerCase)
+    } else if (rawOrder.validUntil <= now){
+      ordersOfPrice.synchronized{
+        var orderHashes = ordersOfPrice.getOrElse(sellPrice, Set[String]())
+        orderHashes = orderHashes + rawOrder.hash
+        ordersOfPrice.put(sellPrice, orderHashes)
+      }
+    }
+    orders.synchronized(orders.put(rawOrder.hash.toLowerCase, orderWithStatus))
+  }
+
+  def delOrder(rawOrder: RawOrder) = {
+    orders.synchronized(orders.remove(rawOrder.hash.toLowerCase))
+    val sellPrice = Rational(rawOrder.amountS.asBigInt, rawOrder.amountB.asBigInt)
+    ordersOfPrice.synchronized {
+      var orderHashes = ordersOfPrice.getOrElse(sellPrice, Set[String]())
+      orderHashes = orderHashes.filter( _ != rawOrder.hash.toLowerCase)
+      ordersOfPrice.put(sellPrice, orderHashes)
+    }
+  }
+
+  def getOrder(hash: String) = {
+    this.orders(hash.toLowerCase).order
+  }
+
+}
+
+class OrderBookManager(tokenS:String, tokenB:String) extends Actor {
+  var orderBook = new OrderBook()
 
   override def receive: Receive = {
-    case order: Order ⇒
+    case order:Order ⇒
   }
 }
