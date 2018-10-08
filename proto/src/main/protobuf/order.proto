@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.loopring.orderbook.proto";
+package org.loopring.orderbook.proto;
+
+
+// level 3 status
+enum OrderStatus {
+    ORDER_STATUS_LEVEL3_UNKNOWN = 0;
+    ORDER_STATUS_DEFERRED = 1;
+    ORDER_STATUS_TINY = 2;
+    ORDER_STATUS_MATCHING = 3;
+    ORDER_STATUS_SETTLEING = 4;
+    ORDER_STATUS_ACTIVE = 5;
+}
+
+enum OrderType {
+    UNKNOWN = 0;
+    MARKET = 1;
+    P2P = 2;
+}
+
+enum MarketSide {
+    BUY = 0;
+    SELL = 1;
+}
+
+enum SoftCancelType {
+    BY_ORDER_HASH = 0;
+    BY_OWNER = 1;
+    BY_TIME = 2; // like cutoff
+    BY_MARKET = 3;
+}
+
+message Order {
+    string protocol = 1;
+    string delegate_address = 2;
+    string token_s = 3;
+    string token_b = 4;
+    string amount_s = 5;
+    string amount_b = 6;
+    int64 valid_since = 7;
+    int64 valid_until = 8;
+    string lrc_fee = 9;
+    bool buy_no_more_than_amount_b = 10;
+    int32 margin_split_percentage = 11;
+    string owner = 12;
+    string wallet_address = 13;
+    string auth_addr = 14;
+    string auth_private_key = 15;
+    int32 v = 16;
+    string r = 17;
+    string s = 18;
+    string hash = 19;
+}
