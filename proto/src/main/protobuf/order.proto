@@ -5,14 +5,59 @@ option java_package = "org.loopring.orderbook.proto";
 package org.loopring.orderbook.proto;
 
 
+message Order {
+    int64 id = 1;
+    RawOrder raw_order = 2;
+    int64 updated_block = 3;
+    string dealtAmountS = 4;
+    string dealtAmountB = 5;
+    string splitAmountS = 6;
+    string splitAmountB = 7;
+    string cancelledAmountS = 8;
+    string cancelledAmountB = 9;
+    OrderStatus status = 10;
+    int32 broadcast_time = 11;
+    double price = 12;
+    int64 pow_nonce = 13;
+    string market = 14;
+    string side = 15;
+    OrderType orderType = 16;
+    int64 createdAt = 17;
+    int64 updatedAt = 18;
+}
+
+// level 1 status
+enum OrderLevel1Status {
+    ORDER_STATUS_LEVEL1_UNKNOWN = 0;
+    ORDER_STATUS_NEW = 1;
+    ORDER_STATUS_FULL = 2;
+    ORDER_STATUS_SOFT_CANCELLED = 3;
+    ORDER_STATUS_HARD_CANCELLED = 4;
+    ORDER_STATUS_EXPIRED = 5;
+}
+
+// level 2 status
+enum OrderLevel2Status {
+    ORDER_STATUS_LEVEL2_UNKNOWN = 0;
+    ORDER_STATUS_OPEN = 1;
+    ORDER_STATUS_PENDING = 2;
+    ORDER_STATUS_PARTIAL = 3;
+}
+
 // level 3 status
-enum OrderStatus {
+enum OrderLevel3Status {
     ORDER_STATUS_LEVEL3_UNKNOWN = 0;
     ORDER_STATUS_DEFERRED = 1;
     ORDER_STATUS_TINY = 2;
     ORDER_STATUS_MATCHING = 3;
     ORDER_STATUS_SETTLEING = 4;
     ORDER_STATUS_ACTIVE = 5;
+}
+
+message OrderStatus {
+    OrderLevel1Status level1_status = 1;
+    OrderLevel2Status level2_status = 2;
+    OrderLevel3Status level3_status = 3;
 }
 
 enum OrderType {
@@ -33,7 +78,7 @@ enum SoftCancelType {
     BY_MARKET = 3;
 }
 
-message Order {
+message RawOrder {
     string protocol = 1;
     string delegate_address = 2;
     string token_s = 3;

@@ -62,8 +62,15 @@ lazy val proto = (project in file("proto"))
       scalapb.gen(flatPackage = false) -> (sourceManaged in Compile).value)
   )
 
+lazy val lib = (project in file("lib"))
+  .dependsOn(proto)
+  .settings(
+    libraryDependencies ++= commonDependency,
+    libraryDependencies ++= ethereumDependency)
+
 lazy val core = (project in file("core"))
   .dependsOn(proto)
+  .dependsOn(lib)
   .settings(
     libraryDependencies ++= commonDependency,
     libraryDependencies ++= akkaDenepdencies)
