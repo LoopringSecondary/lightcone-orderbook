@@ -20,18 +20,22 @@ package org.loopring.orderbook.core.database.actors
 
 import akka.actor.Actor
 import org.loopring.orderbook.lib.math.Rational
+import org.loopring.orderbook.lib.etypes._
 import org.loopring.orderbook.proto.depth._
 
 import scala.collection.mutable
+import scala.collection.SortedMap
 
 // 依赖orderbook
 // 初始化: 从orderBook获取priceIndex
 class DepthManager extends Actor {
 
+  val numOfOrderBookToKeep = 100000
   var market = SetMarket()
 
-  var asks = mutable.TreeMap[Rational, String]()
-  var bids = mutable.TreeMap[Rational, String]()
+  var orderhashSet = mutable.Set[String]()
+  var asks = SortedMap.empty[Double, Entry] // sell
+  var bids = SortedMap.empty[Double, Entry] // buy
 
   override def receive: Receive = {
     case s: SetMarket => market = s
@@ -70,11 +74,55 @@ class DepthManager extends Actor {
   }
 
   private def del(event: OrderDelEvent) = {
-
+    val ord = event.getOrder
+    ord.isAsk(market) match {
+      case true => calculate(ord.getPrice.doubleValue(), ord.availableAmountS.asBigInt, true, false)
+      case false => calculate(ord.getPrice.doubleValue(), ord.availableAmountB.asBigInt, false, false)
+    }
   }
 
   private def update(event: OrderUpdateEvent) = {
+    val ord = event.getOrder
+    ord.isAsk(market) match {
+      case true => calculate()
+      case false =>
+    }
+  }
 
+  private def calculate(orderhash: String, price: Double, amount: BigInt, isAsk: Boolean, isAdd: Boolean) = {
+    var dest = if(isAsk) {
+      asks
+    } else {
+      bids
+    }
+
+    val exist = dest.getOrElse(price, Entry(price, 0, BigInt(0).toString))
+    val (calAmount, calSize) = if(isAdd) {
+      (
+        exist.amount.asBigInteger.add(amount.bigInteger),
+        exist.size + 1
+      )
+    } else {
+      (
+        exist.amount.asBigInteger.subtract(amount.bigInteger),
+        exist.size - 1
+      )
+    }
+
+    orderhashSet.contains(orderhash.toLowerCase)
+
+    if (calSize <= 0 || calAmount.compareTo(BigInt(0)) <= 0) {
+      dest -= price
+    } else {
+      if (dest.size >= numOfOrderBookToKeep) dest = dest.drop(1)
+      dest += price -> exist.copy(price, calSize, calAmount.toString)
+    }
+
+    if(isAsk) {
+      asks = dest
+    } else {
+      bids = dest
+    }
   }
 
 }
