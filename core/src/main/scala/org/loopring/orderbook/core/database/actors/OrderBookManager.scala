@@ -28,42 +28,82 @@ import akka.util.Timeout
 import scala.collection.mutable
 import scala.concurrent.{ ExecutionContext, Future }
 
-case class OrderWithStatus(order: Order, deferredTime: Long)
+case class OrderWithStatus(order: Order, deferredTime: Long, filledAmountS: BigInt = BigInt(0), filledAmountB: BigInt = BigInt(0))
 
-class PriceIndex {
+class PriceIndex() {
   var index = mutable.TreeMap[Rational, Set[String]]()
 
-  def add(sellPrice: Rational, orderhash: String) = {
-
+  def add(sellPrice: Rational, rawOrder: RawOrder) = {
+    index.synchronized {
+      var orderHashes = index.getOrElse(sellPrice, Set[String]())
+      orderHashes = orderHashes + rawOrder.hash.toLowerCase
+      index.put(sellPrice, orderHashes)
+    }
   }
 
   def del(sellPrice: Rational, orderhash: String) = {
-
+    index.synchronized {
+      var orderHashes = index.getOrElse(sellPrice, Set[String]())
+      orderHashes = orderHashes - orderhash.toLowerCase
+      if (orderHashes.nonEmpty) {
+        index.put(sellPrice, orderHashes)
+      } else {
+        index.remove(sellPrice)
+      }
+    }
   }
 }
 
-class DelayIndex {
-  var index = mutable.TreeMap[String, Int]()
+class DeferredIndex {
+  var index = mutable.TreeMap[String, Long]()
 
-  def add(orderhash: String, delayTime: Int) = {
-
+  def add(orderhash: String, delayTime: Long) = {
+    index.synchronized {
+      if (delayTime > 0) {
+        index.put(orderhash.toLowerCase(), delayTime)
+      } else {
+        index.remove(orderhash.toLowerCase())
+      }
+    }
   }
 
   def del(orderhash: String) = {
-
+    index.synchronized {
+      index.remove(orderhash.toLowerCase())
+    }
   }
 }
 
 class OrderAvailable {
-  var SettlingAmount = mutable.HashMap[String, BigInt]()
-  var Balances = mutable.HashMap[String, BigInt]()
+  //todo:optimize it
+  var settlingAmount = mutable.HashMap[String, BigInt]()
+  var balances = mutable.HashMap[String, BigInt]()
 
-  def add(orderhash: String, delayTime: Int) = {
-
+  def updateBalance(address: String, balance: BigInt) = {
+    val addr = address.toLowerCase()
+    balances.synchronized(balances.put(addr, balance))
   }
 
-  def del(orderhash: String) = {
+  //买入和卖出
+  def addSettlingAmount(orderhash: String, amountS: BigInt, amountB: BigInt) = {
+    val hash = orderhash.toLowerCase()
+    settlingAmount.synchronized {
+      var preAmountS = settlingAmount.getOrElse(hash, BigInt(0))
+      settlingAmount.put(hash, preAmountS + amountS)
+    }
+  }
 
+  //可能需要根据ringhash删除
+  def delSettlingAmount(orderhash: String, amount: BigInt) = {
+    val hash = orderhash.toLowerCase()
+    settlingAmount.synchronized {
+      var preAmount = settlingAmount.getOrElse(hash, BigInt(0))
+      if (preAmount > amount) {
+        settlingAmount.put(hash, preAmount - amount)
+      } else {
+        settlingAmount.remove(hash)
+      }
+    }
   }
 
 }
@@ -72,122 +112,112 @@ class ValidIndex {
   val validSinceIndex = mutable.TreeMap[Long, Set[String]]()
   val validUntilIndex = mutable.TreeMap[Long, Set[String]]()
 
-  def add(validSince: Long, orderhash: String) = {
-
+  def add(rawOrder: RawOrder) = {
+    val orderhash = rawOrder.hash.toLowerCase()
+    val now = System.currentTimeMillis() / 1e6
+    if (rawOrder.validSince > now) {
+      validSinceIndex.synchronized {
+        var hashes = validSinceIndex.getOrElse(rawOrder.validSince, Set[String]())
+        hashes = hashes + orderhash
+        validSinceIndex.put(rawOrder.validSince, hashes)
+      }
+    } else if (rawOrder.validUntil > now) {
+      validUntilIndex.synchronized {
+        var hashes = validUntilIndex.getOrElse(rawOrder.validUntil, Set[String]())
+        hashes = hashes + orderhash
+        validUntilIndex.put(rawOrder.validUntil, hashes)
+      }
+    }
   }
 
-  def del(validSince: Long, orderhash: String) = {
+  def del(rawOrder: RawOrder) = {
+    val orderhash = rawOrder.hash.toLowerCase()
+    validSinceIndex.synchronized {
+      var hashes = validSinceIndex.getOrElse(rawOrder.validSince, Set[String]())
+      if (hashes.nonEmpty) {
+        hashes = hashes - orderhash
+        if (hashes.nonEmpty) {
+          validSinceIndex.put(rawOrder.validSince, hashes)
+        } else {
+          validSinceIndex.remove(rawOrder.validSince)
+        }
+      }
+    }
+    validUntilIndex.synchronized {
+      var hashes = validUntilIndex.getOrElse(rawOrder.validUntil, Set[String]())
+      if (hashes.nonEmpty) {
+        hashes = hashes - orderhash
+        if (hashes.nonEmpty) {
+          validUntilIndex.put(rawOrder.validUntil, hashes)
+        } else {
+          validUntilIndex.remove(rawOrder.validUntil)
+        }
+      }
+    }
 
   }
 }
+//灰尘单
+class DustIndex(dustEvaluator: DustEvaluator) {
+  val index = mutable.Set[String]()
 
+  def add(order: Order) = {
+    val orderhash = order.getRawOrder.hash.toLowerCase
+    if (dustEvaluator.isDust()) {
+      index.synchronized(index.add(orderhash))
+    }
+  }
+
+  def del(orderhash: String) = {
+    index.synchronized(index.remove(orderhash))
+  }
+}
+
+class DustEvaluator {
+  var usedEth = BigInt(1)
+  var priceOfEth = Rational(1)
+  var dustValue = BigInt(0)
+  var finishValue = BigInt(0)
+
+  //根据可用金额而不是订单本身的金额计算
+  def isDust(): Boolean = {
+    false
+  }
+
+  //需要根据订单本身的金额，而不是可用金额
+  def isFinished(): Boolean = {
+    false
+  }
+
+}
 /**
  * 保存订单
  * 所有订单放置在orders中，根据不同情况放入不同的index中
  * 查询时，根据index进行查询
  *
  * ordersWithPriceIdx 按照价格保存订单，保存的订单类型为：在有效期内的，包含delay的，不包含灰尘单
- * ordersWithDelayIdx 保存订单的延迟时间，
- * ordersWithAvailable 保存订单的可用金额，包括settling和balance的金额
- * ordersWithValidIdx 保存有效时间，未在有效时间的和将要到期的订单，便于定时器添加和删除
  */
-
 class OrderBook {
-  var orders = mutable.HashMap[String, OrderWithStatus]()
+  var orders = mutable.HashMap[String, Order]()
+
   //订单的获取，根据情况，按照index获取
-  //  按照价格保存订单，保存的订单类型为：在有效期内的，包含delay的，不包含灰尘单
+  //按照价格保存订单，这里的订单是可以被撮合，保存的订单类型为：在有效期内的，包含defer的，不包含灰尘单
   var ordersWithPriceIdx = new PriceIndex()
-  //保存订单的延迟时间，
-  var ordersWithDelayIdx = new DelayIndex()
-  //保存订单的可用金额，包括settling和balance的金额
-  var ordersWithAvailable = new OrderAvailable()
-  //保存有效时间，未在有效时间的和将要到期的订单，便于定时器添加和删除
-  var ordersWithValidIdx = new ValidIndex()
-
-  def addOrder(orderWithStatus: OrderWithStatus): Unit = {
+  def addOrUpdateOrder(orderWithStatus: OrderWithStatus): Unit = {
     val now = System.currentTimeMillis() / 1e6
-    val rawOrder = orderWithStatus.order.rawOrder.get
+    val rawOrder = orderWithStatus.order.getRawOrder
     val orderhash = rawOrder.hash.toLowerCase
-    //当前已过期，不处理
-    if (rawOrder.validUntil <= now) {
-      return
-    }
-    //未过期，根据情况，放入各个index中
-    orders.synchronized(orders.put(orderhash, orderWithStatus))
-
-    //    val sellPrice = Rational(rawOrder.amountS.asBigInt, rawOrder.amountB.asBigInt)
-    //    if (rawOrder.validSince > now) {
-    //      ordersWithValidSinceIdx.synchronized(ordersWithValidSinceIdx + orderhash)
-    //    } else if (rawOrder.validUntil <= now) {
-    //      ordersWithPriceIdx.synchronized {
-    //        var orderHashes = ordersWithPriceIdx.getOrElse(sellPrice, Set[String]())
-    //        orderHashes = orderHashes + rawOrder.hash
-    //        ordersWithPriceIdx.put(sellPrice, orderHashes)
-    //      }
-    //    }
-
+    orders.synchronized(orders.put(orderhash, orderWithStatus.order))
   }
 
   def delOrder(rawOrder: RawOrder) = {
     val orderhash = rawOrder.hash.toLowerCase
     orders.synchronized(orders.remove(orderhash))
-    //    delAllIndex(rawOrder)
-
   }
 
   def getOrder(hash: String) = {
-    this.orders(hash.toLowerCase).order
+    this.orders(hash.toLowerCase)
   }
-
-  //  def delAllIndex(rawOrder: RawOrder) = {
-  //    val orderhash = rawOrder.hash.toLowerCase
-  //    ordersWithSettling.synchronized(ordersWithSettling.remove(orderhash))
-  //    ordersWithValidSinceIdx.synchronized{
-  //      var orderHashes = ordersWithValidSinceIdx.getOrElse(rawOrder.validSince, Set[String]())
-  //      orderHashes = orderHashes.filter(_ != orderhash)
-  //      ordersWithValidSinceIdx.put(rawOrder.validSince, orderHashes)
-  //    }
-  //
-  //    val sellPrice = Rational(rawOrder.amountS.asBigInt, rawOrder.amountB.asBigInt)
-  //    ordersWithPriceIdx.synchronized {
-  //      var orderHashes = ordersWithPriceIdx.getOrElse(sellPrice, Set[String]())
-  //      orderHashes = orderHashes.filter(_ != orderhash)
-  //      ordersWithPriceIdx.put(sellPrice, orderHashes)
-  //    }
-  //  }
-  //
-  //  def delDelayIdx(orderhash:String) = {
-  //    ordersWithDelayIdx.synchronized(ordersWithDelayIdx.remove(orderhash))
-  //  }
-  //  def delDelayIdx(orderhash:String) = {
-  //    ordersWithDelayIdx.synchronized(ordersWithDelayIdx.remove(orderhash))
-  //  }
-  //  def delDelayIdx(orderhash:String) = {
-  //    ordersWithDelayIdx.synchronized(ordersWithDelayIdx.remove(orderhash))
-  //  }
-  //  def delDelayIdx(orderhash:String) = {
-  //    ordersWithDelayIdx.synchronized(ordersWithDelayIdx.remove(orderhash))
-  //  }
-  //
-  //
-  //  def addToIndex(orderWithStatus: OrderWithStatus) = {
-  //    val rawOrder = orderWithStatus.order.getRawOrder
-  //    val orderhash = rawOrder.hash.toLowerCase
-  //    ordersWithDelayIdx.synchronized(ordersWithDelayIdx.remove(orderhash))
-  //    ordersWithSettling.synchronized(ordersWithSettling.remove(orderhash))
-  //    ordersWithValidSinceIdx.synchronized{
-  //      var orderHashes = ordersWithValidSinceIdx.getOrElse(rawOrder.validSince, Set[String]())
-  //      orderHashes = orderHashes.filter(_ != orderhash)
-  //      ordersWithValidSinceIdx.put(rawOrder.validSince, orderHashes)
-  //    }
-  //
-  //    val sellPrice = Rational(rawOrder.amountS.asBigInt, rawOrder.amountB.asBigInt)
-  //    ordersWithPriceIdx.synchronized {
-  //      var orderHashes = ordersWithPriceIdx.getOrElse(sellPrice, Set[String]())
-  //      orderHashes = orderHashes.filter(_ != orderhash)
-  //      ordersWithPriceIdx.put(sellPrice, orderHashes)
-  //    }
-  //  }
 }
 
 /**
@@ -202,52 +232,19 @@ class OrderBook {
  * 需要保存内容：
  * 1、订单的可用金额，包括settling和balance
  * 2、
- *
- *
  */
 class OrderBookManager(
-  tokenS: String,
+  tokenA: String,
   tokenB: String,
   counterpartyActor: ActorRef,
   depthActor: ActorRef)(implicit
   ec: ExecutionContext,
   timeout: Timeout) extends RepeatedJobActor {
-  var orderBook = new OrderBook()
+  var orderBookA = new OrderBook()
+  var orderBookB = new OrderBook()
 
   override def receive: Receive = {
-    case _ ⇒
-    //    case orderForMatch: OrderForMatch ⇒
-    //      //需要遍历匹配的订单
-    //      val rawOrder = orderForMatch.rawOrder.get
-    //      val sellPrice = Rational(rawOrder.amountS.asBigInt, rawOrder.amountB.asBigInt)
-    //      //todo:test
-    //      val candidates = orderBook.ordersWithPriceIdx.range(Rational(0,1), sellPrice).flatMap{
-    //        a ⇒ a._2
-    //      }.map{
-    //        orderHash ⇒ {
-    //          val order = orderBook.getOrder(orderHash)
-    //          val volume = Rational(0,1)
-    //          val lrcFee = Rational(rawOrder.lrcFee.asBigInt) * Rational(rawOrder.amountS.asBigInt)/volume +
-    //            Rational(order.getRawOrder.lrcFee.asBigInt) * Rational(order.getRawOrder.amountS.asBigInt)/volume
-    //          (lrcFee, order.getRawOrder, rawOrder)
-    //        }
-    //      }.filter(_._1 > Rational(0))
-    //      if (candidates.nonEmpty) {
-    //
-    //      } else {
-    //
-    //      }
-    //
-    //    case order: Order ⇒ for {
-    //      res ← counterpartyActor ? order
-    //    } yield {
-    //      res match {
-    //        case deferred:OrderDeferred ⇒
-    //          val order = orderBook.getOrder(deferred.hash.toLowerCase())
-    //          val orderWithStatus = OrderWithStatus(order=order, deferredTime=deferred.deferredTime)
-    //          orderBook.updateOrAddOrder(orderWithStatus)
-    //      }
-    //    }
+    case order: Order ⇒
   }
 
   override def handleRepeatedJob(): Future[Unit] = ???
