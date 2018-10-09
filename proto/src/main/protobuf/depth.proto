@@ -7,33 +7,46 @@ package org.loopring.orderbook.proto;
 message OrderBaseInfo {
     string order_hash = 1;
     string price = 2;
-    string market = 3;
-    string side = 4;
+    string token_s = 3;
+    string token_b = 4;
+    string amount_s = 5;
+    string amount_b = 6;
 }
 
-message OrderAdd {
+message OrderAddEvent {
     OrderBaseInfo order = 1;
 }
 
-message OrderDel {
+message OrderDelEvent {
     OrderBaseInfo order = 1;
 }
 
-message OrderUpdate {
+message OrderUpdateEvent {
     OrderBaseInfo order = 1;
-    string amount = 2;
+    string fill_amount_s = 2;
+    string fill_amount_b = 3;
 }
 
-message DepthOrder {
-    OrderBaseInfo order = 1;
+message GetDepthOrderListReq {
+    string token_s = 1;
+    string token_b = 2;
+}
+
+message GetDepthOrderListRes {
+    repeated OrderBaseInfo list = 1;
+}
+
+message DepthElement {
+    string price = 1;
     string amount = 2;
 }
 
 message GetDepthReq {
-    string market = 1;
-    string side = 2;
+    string token_s = 1;
+    string token_b = 2;
 }
 
 message GetDepthRes {
-    repeated DepthOrder list = 1;
+    repeated DepthElement asks = 1;
+    repeated DepthElement bids = 2;
 }
