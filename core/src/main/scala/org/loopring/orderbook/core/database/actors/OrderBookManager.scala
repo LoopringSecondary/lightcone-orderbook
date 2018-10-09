@@ -236,17 +236,20 @@ class OrderBook {
 class OrderBookManager(
   tokenA: String,
   tokenB: String,
-  counterpartyActor: ActorRef,
   depthActor: ActorRef)(implicit
   ec: ExecutionContext,
   timeout: Timeout) extends RepeatedJobActor {
-  var orderBookA = new OrderBook()
-  var orderBookB = new OrderBook()
+  var tokenAOrderBook = new OrderBook()
+  var tokenBOrderBook = new OrderBook()
+
+  var tokenADepthPrice = Rational(0)
+  var tokenBDepthPrice = Rational(0)
 
   override def receive: Receive = {
-    case order: Order ⇒
+    case order: OrderForMatch ⇒
   }
 
   override def handleRepeatedJob(): Future[Unit] = ???
 
 }
+
