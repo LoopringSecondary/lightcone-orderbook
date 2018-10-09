@@ -27,6 +27,8 @@ message RawOrder {
     string auth_addr = 10;
     string auth_private_key = 11;
     string hash = 12;
+    int64 valid_since = 13;
+    int64 valid_until = 14;
 }
 
 message Order {
