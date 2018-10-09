@@ -51,5 +51,20 @@ message OrderDeferred {
    string cause = 3;
 }
 
+message OrderForMatch {
+   RawOrder raw_order = 1;
+   string availableAmountS = 2;
+   string availableLrcAmount = 3;
+}
+
+message GetMaxPriceReq {
+}
+
+message GetMaxPriceRes {
+   string amount_s = 1;
+   string amount_b = 2;
+}
 
 
+message StartNewRound {
+}
