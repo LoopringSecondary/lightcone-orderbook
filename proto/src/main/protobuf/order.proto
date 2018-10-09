@@ -15,25 +15,18 @@ enum OrderStatus {
 }
 
 message RawOrder {
-    string protocol = 1;
-    string delegate_address = 2;
-    string token_s = 3;
-    string token_b = 4;
-    string amount_s = 5;
-    string amount_b = 6;
-    int64 valid_since = 7;
-    int64 valid_until = 8;
-    string lrc_fee = 9;
-    bool buy_no_more_than_amount_b = 10;
-    int32 margin_split_percentage = 11;
-    string owner = 12;
-    string wallet_address = 13;
-    string auth_addr = 14;
-    string auth_private_key = 15;
-    int32 v = 16;
-    string r = 17;
-    string s = 18;
-    string hash = 19;
+    string token_s = 1;
+    string token_b = 2;
+    string amount_s = 3;
+    string amount_b = 4;
+    string lrc_fee = 5;
+    bool buy_no_more_than_amount_b = 6;
+    int32 margin_split_percentage = 7;
+    string owner = 8;
+    string wallet_address = 9;
+    string auth_addr = 10;
+    string auth_private_key = 11;
+    string hash = 12;
 }
 
 message Order {
