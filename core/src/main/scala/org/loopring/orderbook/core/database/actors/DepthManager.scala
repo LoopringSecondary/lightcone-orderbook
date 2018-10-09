@@ -19,7 +19,17 @@
 package org.loopring.orderbook.core.database.actors
 
 import akka.actor.Actor
+import org.loopring.orderbook.lib.math.Rational
 
+import scala.collection.mutable
+
+// 依赖orderbook
+// 初始化: 从orderBook获取priceIndex
 class DepthManager extends Actor {
+
+  var asks = mutable.TreeMap[Rational, String]()
+  var bids = mutable.TreeMap[Rational, String]()
+
   override def receive: Receive = ???
+
 }

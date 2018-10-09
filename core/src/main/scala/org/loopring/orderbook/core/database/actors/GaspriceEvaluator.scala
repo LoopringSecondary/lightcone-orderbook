@@ -21,22 +21,13 @@ package org.loopring.orderbook.core.database.actors
 import akka.actor.Actor
 import org.loopring.orderbook.proto.gas._
 
-import scala.util.Random
-
 class GaspriceEvaluator extends Actor {
 
   var gasPrice = BigInt(0)
 
-  val min = 4950000000L
-  val max = 14052734625L
-
   override def receive: Receive = {
-    case req: GasReq => GasRes().withValue(BigInt(getRandomGasPrice).toString)
+    case req: GasReq => GasRes().withValue(gasPrice.toString)
     case set: SetGas => gasPrice = BigInt.apply(set.value)
   }
 
-  def getRandomGasPrice = {
-    val rnd = new Random
-    min + rnd.nextInt(max - min + 1)
-  }
 }
