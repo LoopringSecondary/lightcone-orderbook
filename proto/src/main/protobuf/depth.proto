@@ -4,13 +4,21 @@ option java_multiple_files = true;
 option java_package = "org.loopring.orderbook.proto";
 package org.loopring.orderbook.proto;
 
+message SetMarket {
+    string exchange_token_addr = 1;
+    string market_token_addr = 2;
+    string exchagne_token_name = 3;
+    string market_token_name = 4;
+}
+
 message OrderBaseInfo {
     string order_hash = 1;
-    string price = 2;
-    string token_s = 3;
-    string token_b = 4;
-    string amount_s = 5;
-    string amount_b = 6;
+    string amount_s = 2;
+    string amount_b = 3;
+    string token_s = 4;
+    string token_b = 5;
+    string available_amount_s = 6;
+    string available_amount_b = 7;
 }
 
 message OrderAddEvent {
@@ -36,9 +44,10 @@ message GetDepthOrderListRes {
     repeated OrderBaseInfo list = 1;
 }
 
-message DepthElement {
-    string price = 1;
-    string amount = 2;
+message Entry {
+    double price = 1;
+    int64 size = 2;
+    string amount = 3; // 委托数量
 }
 
 message GetDepthReq {
@@ -47,6 +56,6 @@ message GetDepthReq {
 }
 
 message GetDepthRes {
-    repeated DepthElement asks = 1;
-    repeated DepthElement bids = 2;
+    repeated Entry bids = 1;
+    repeated Entry asks = 2;
 }
