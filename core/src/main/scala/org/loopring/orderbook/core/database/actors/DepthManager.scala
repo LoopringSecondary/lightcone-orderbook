@@ -20,6 +20,7 @@ package org.loopring.orderbook.core.database.actors
 
 import akka.actor.Actor
 import org.loopring.orderbook.lib.math.Rational
+import org.loopring.orderbook.proto.depth._
 
 import scala.collection.mutable
 
@@ -27,9 +28,53 @@ import scala.collection.mutable
 // 初始化: 从orderBook获取priceIndex
 class DepthManager extends Actor {
 
+  var market = SetMarket()
+
   var asks = mutable.TreeMap[Rational, String]()
   var bids = mutable.TreeMap[Rational, String]()
 
-  override def receive: Receive = ???
+  override def receive: Receive = {
+    case s: SetMarket => market = s
+
+    case s: OrderAddEvent =>
+      inThisMarket(s.getOrder.tokenS, s.getOrder.tokenB, market) {
+        add(s)
+      }
+
+    case s: OrderDelEvent =>
+      inThisMarket(s.getOrder.tokenS, s.getOrder.tokenB, market) {
+        del(s)
+      }
+
+    case s: OrderUpdateEvent =>
+      inThisMarket(s.getOrder.tokenS, s.getOrder.tokenB, market) {
+        update(s)
+      }
+  }
+
+  def initAsks() = {
+
+  }
+
+  def initBids = {
+
+  }
+
+  private def add(event: OrderAddEvent) = {
+    val order = event.getOrder
+    if (order.isAsk(market)) {
+
+    } else {
+
+    }
+  }
+
+  private def del(event: OrderDelEvent) = {
+
+  }
+
+  private def update(event: OrderUpdateEvent) = {
+
+  }
 
 }
