@@ -4,13 +4,6 @@ option java_multiple_files = true;
 option java_package = "org.loopring.orderbook.proto";
 package org.loopring.orderbook.proto;
 
-message SetMarket {
-    string exchange_token_addr = 1;
-    string market_token_addr = 2;
-    string exchagne_token_name = 3;
-    string market_token_name = 4;
-}
-
 message DepthUpdateEvent {
     string amount_s = 1;
     string amount_b = 2;

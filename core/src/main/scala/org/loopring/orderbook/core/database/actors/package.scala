@@ -18,17 +18,18 @@
 
 package org.loopring.orderbook.core.database
 
-import org.loopring.orderbook.proto.depth.{ DepthUpdateEvent, SetMarket }
+import org.loopring.orderbook.proto.deployment.{ DepthManagerSettings, MarketConfig }
+import org.loopring.orderbook.proto.depth.DepthUpdateEvent
 import org.loopring.orderbook.lib.math.Rational
 import org.loopring.orderbook.lib.etypes._
 
 package object actors {
 
-  def inThisMarket(tokenS: String, tokenB: String, market: SetMarket)(op: => Any) = {
+  def inThisMarket(tokenS: String, tokenB: String, market: MarketConfig)(op: => Any) = {
     val ts = tokenS.toLowerCase
     val tb = tokenB.toLowerCase
-    val ms = market.marketTokenAddr.toLowerCase
-    val mb = market.exchangeTokenAddr.toLowerCase
+    val ms = market.marketToken.toLowerCase
+    val mb = market.exchangeToken.toLowerCase
 
     if ((ts.equals(ms) && tb.equals(mb)) || (ts.equals(mb) && tb.equals(ms))) {
       val result = op
@@ -42,8 +43,9 @@ package object actors {
     }
 
     // lrc-weth sell lrc, buy weth, ask == sell
-    def isAsk(market: SetMarket): Boolean = {
-      src.tokenS.toLowerCase.equals(market.exchangeTokenAddr.toLowerCase)
+    def isAsk(market: MarketConfig): Boolean = {
+      src.tokenS.toLowerCase.equals(market.exchangeToken.toLowerCase)
     }
+
   }
 }

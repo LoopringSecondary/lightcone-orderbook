@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.loopring.orderbook.proto";
+package org.loopring.orderbook.proto;
+
+message Msg {
+    string name = 1;
+}
+
+message MarketConfig {
+    string market_token = 1;
+    string exchange_token = 2;
+}
+
+message OrderAmountFacilitatorSettings {
+    string token_s = 1;
+}
+
+message DepthManagerSettings {
+    MarketConfig market_config = 1;
+}
+
+message DynamicSettings {
+    DepthManagerSettings depth_manager_settings = 1;
+    OrderAmountFacilitatorSettings order_amount_facilitator_settings = 2;
+}

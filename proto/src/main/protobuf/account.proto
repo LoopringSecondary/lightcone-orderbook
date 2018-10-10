@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.loopring.orderbook.proto";
+package org.loopring.orderbook.proto;
+
+message AllowanceChangedEvent {
+    string token = 1;
+    string owner = 2;
+    string current_amount = 3;
+}
+
+message BalanceChangedEvent {
+    string token = 1;
+    string owner = 2;
+    string current_amount = 3;
+}

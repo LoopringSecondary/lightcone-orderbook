@@ -21,6 +21,7 @@ package org.loopring.orderbook.core.database.actors
 import akka.actor._
 import akka.pattern.ask
 import akka.util.Timeout
+import org.loopring.orderbook.proto.deployment.{DepthManagerSettings, MarketConfig}
 import org.loopring.orderbook.lib.etypes._
 import org.loopring.orderbook.lib.math._
 import org.loopring.orderbook.proto.depth._
@@ -37,7 +38,7 @@ class DepthManager(orderBookManager: ActorRef)(
   ec: ExecutionContext) extends Actor {
 
   val numOfOrderBookToKeep = 500
-  var market = SetMarket()
+  var market = MarketConfig()
   val pageSize = 20
 
   var asks = SortedMap.empty[Double, Entry] // sell
@@ -60,7 +61,7 @@ class DepthManager(orderBookManager: ActorRef)(
   getAskBidsFromOrderBookManager(0, false)
 
   override def receive: Receive = {
-    case s: SetMarket => market = s
+    case s: DepthManagerSettings => market = s.getMarketConfig
 
     case e: DepthUpdateEvent =>
       inThisMarket(e.tokenS, e.tokenB, market) {
@@ -77,7 +78,7 @@ class DepthManager(orderBookManager: ActorRef)(
   }
 
   private def getAskBidsFromOrderBookManager(pageIndex: Int, isAsk: Boolean): Future[Unit] = for {
-    res <- orderBookManager ? GetDepthOrderListReq(market.marketTokenAddr, market.exchangeTokenAddr, pageSize, pageIndex)
+    res <- orderBookManager ? GetDepthOrderListReq(market.marketToken, market.exchangeToken, pageSize, pageIndex)
     _ = res match {
       case s: GetDepthOrderListRes =>
         s.list.map(update)
