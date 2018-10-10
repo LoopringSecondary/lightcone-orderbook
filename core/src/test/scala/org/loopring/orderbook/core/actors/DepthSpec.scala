@@ -54,8 +54,21 @@ class DepthSpec extends FlatSpec {
   )
 
   "assemble" should "show depth" in {
-    val granularity = 10
-    assemble(granularity, true).map(e => info(e._2.toString))
+    var g = 0.00001d
+    info(s"-----------------${g.toString}------------------")
+    assemble(g, true).map(e => info(e._2.toString))
+
+    g = 0.0001d
+    info(s"-----------------${g.toString}------------------")
+    assemble(g, true).map(e => info(e._2.toString))
+
+    g = 1
+    info(s"-----------------${g.toString}------------------")
+    assemble(g, true).map(e => info(e._2.toString))
+
+    g = 10
+    info(s"-----------------${g.toString}------------------")
+    assemble(g, true).map(e => info(e._2.toString))
   }
 
   private def assemble(granularity: Double, isAsk: Boolean): SortedMap[Double, Entry] = {
@@ -63,22 +76,12 @@ class DepthSpec extends FlatSpec {
     var dest = SortedMap.empty[Double, Entry]
 
     src.map { a =>
-      val entry = if (dest.size < 1) {
-        Entry(a._1, 0, BigInt(0).toString)
-      } else {
-        val temp = dest.dropWhile(_._1 < a._1 + granularity)
-        if (temp.size > 0) {
-          temp.head._2
-        } else {
-          Entry(a._1, 0, BigInt(0).toString)
-        }
-      }
+      val price = middlePrice(a._1, granularity)
+      val entry = dest.getOrElse(price, Entry(price, 0, BigInt(0).toString()))
+      val size = entry.size + a._2.size
+      val amount = BigInt(entry.amount).bigInteger.add(BigInt(a._2.amount).bigInteger)
 
-      val newPrice = middlePrice(entry.price, granularity)
-      val newEntry = dest.getOrElse(newPrice, Entry(newPrice, 0, BigInt(0).toString()))
-      val newAmount = BigInt(newEntry.amount).bigInteger.add(BigInt(a._2.amount).bigInteger)
-
-      dest += newPrice -> newEntry.copy(price = newPrice, size = newEntry.size + a._2.size, amount = newAmount.toString)
+      dest += price -> entry.copy(price, size, amount.toString)
     }
     dest
   }
@@ -87,12 +90,8 @@ class DepthSpec extends FlatSpec {
     if (price <= granularity) {
       granularity
     } else {
-      if (price > 0) {
-        ((price / granularity).round * granularity).doubleValue()
-      } else {
-        val p = precisedMap.getOrElse(granularity, 1)
-        ((price / granularity).round * granularity).scaled(p)
-      }
+      val p = precisedMap.getOrElse(granularity, 1)
+      ((price / granularity).round * granularity).scaled(p)
     }
   }
 }
