@@ -22,25 +22,45 @@ import slick.jdbc.MySQLProfile.api._
 
 class Orders(tag: Tag) extends BaseTable[Order](tag, "ORDERS") {
   def tokenS = column[String]("token_s", O.SqlType("VARCHAR(64)"))
+
   def tokenB = column[String]("token_b", O.SqlType("VARCHAR(64)"))
+
   def amountS = column[String]("amount_s", O.SqlType("VARCHAR(64)"))
+
   def amountB = column[String]("amount_b", O.SqlType("VARCHAR(64)"))
+
   def lrcFee = column[String]("lrc_fee", O.SqlType("VARCHAR(64)"))
+
   def buyNoMoreThanAmountB = column[Boolean]("buy_no_more_than_amount_b")
+
   def marginSplitPercentage = column[Int]("margin_split_percentage", O.SqlType("TINYINT(4)"))
+
   def owner = column[String]("owner", O.SqlType("VARCHAR(64)"))
+
   def walletAddress = column[String]("wallet_address", O.SqlType("VARCHAR(64)"))
+
   def authAddress = column[String]("auth_address", O.SqlType("VARCHAR(64)"))
+
   def privateKey = column[String]("private_key", O.SqlType("VARCHAR(128)"))
+
   def orderHash = column[String]("order_hash", O.SqlType("VARCHAR(128)"))
+
   def validSince = column[Long]("valid_since", O.SqlType("BIGINT"))
+
   def validUntil = column[Long]("valid_until", O.SqlType("BIGINT"))
+
   def dealtAmountS = column[String]("dealt_amount_s", O.SqlType("VARCHAR(64)"))
+
   def dealtAmountB = column[String]("dealt_amount_b", O.SqlType("VARCHAR(64)"))
+
   def delayCause = column[String]("delay_cause", O.SqlType("VARCHAR(64)"))
+
   def status = column[String]("status", O.SqlType("VARCHAR(64)"))
+
   def market = column[String]("market", O.SqlType("VARCHAR(32)"))
+
   def side = column[String]("side", O.SqlType("VARCHAR(32)"))
+
   def price = column[Double]("price", O.SqlType("DECIMAL(28,16)"))
 
   def * = (
@@ -71,8 +91,8 @@ class Orders(tag: Tag) extends BaseTable[Order](tag, "ORDERS") {
     orderHash,
     validSince,
     validUntil) <> (
-      (RawOrder.apply _).tupled,
-      RawOrder.unapply)
+    (RawOrder.apply _).tupled,
+    RawOrder.unapply)
 
   private def extendTupled = (i: Tuple11[Long, RawOrder, String, String, String, String, String, String, Double, Long, Long]) ⇒
     Order.apply(

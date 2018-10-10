@@ -21,6 +21,7 @@ import java.text.SimpleDateFormat
 
 trait TimeFormatter {
   def format(timeMillis: Long): String
+
   def format(timestamp: Timestamp): String = format(timestamp.getTime)
 }
 

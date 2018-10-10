@@ -26,6 +26,7 @@ trait RepeatedJobActor extends Actor {
   var cancelOpt: Option[Cancellable] = None
   var scheduleDelay: Long = 0l
   var inited = false
+
   import context.dispatcher
 
   def initAndStartNextRound(scheduleDelay: Long): Unit = {

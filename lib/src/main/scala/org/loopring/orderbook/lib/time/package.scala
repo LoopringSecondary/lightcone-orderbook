@@ -21,11 +21,15 @@ import java.sql.Timestamp
 import org.joda.time.Period
 
 package object time {
+
   implicit class RichSqlTimestamp(timestamp: Timestamp) {
     def +(millis: Long) = new Timestamp(timestamp.getTime + millis)
+
     def -(millis: Long) = new Timestamp(timestamp.getTime - millis)
 
     def +(p: Period) = new Timestamp(timestamp.getTime + p.getMillis)
+
     def -(p: Period) = new Timestamp(timestamp.getTime - p.getMillis)
   }
+
 }

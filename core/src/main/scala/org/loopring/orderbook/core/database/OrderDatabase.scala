@@ -28,9 +28,13 @@ trait OrderDatabase {
   val timeProvider: TimeProvider
 
   def profile: JdbcProfile = dbConfig.profile
+
   def db: BasicProfile#Backend#Database = dbConfig.db
+
   def dbec: ExecutionContext
+
   def displayDDL(): Unit
+
   def generateDDL(): Unit
 
   // table dal
