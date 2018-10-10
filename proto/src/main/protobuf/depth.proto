@@ -11,37 +11,25 @@ message SetMarket {
     string market_token_name = 4;
 }
 
-message OrderBaseInfo {
-    string order_hash = 1;
-    string amount_s = 2;
-    string amount_b = 3;
-    string token_s = 4;
-    string token_b = 5;
-    string available_amount_s = 6;
-    string available_amount_b = 7;
-}
-
-message OrderAddEvent {
-    OrderBaseInfo order = 1;
-}
-
-message OrderDelEvent {
-    OrderBaseInfo order = 1;
-}
-
-message OrderUpdateEvent {
-    OrderBaseInfo order = 1;
-    string fill_amount_s = 2;
-    string fill_amount_b = 3;
+message DepthUpdateEvent {
+    string amount_s = 1;
+    string amount_b = 2;
+    string token_s = 3;
+    string token_b = 4;
+    int32 size = 5;
+    string amount = 6;
 }
 
 message GetDepthOrderListReq {
     string token_s = 1;
     string token_b = 2;
+    int32 page_size = 3;
+    int32 page_idx = 4;
 }
 
 message GetDepthOrderListRes {
-    repeated OrderBaseInfo list = 1;
+    repeated DepthUpdateEvent list = 1;
+    int32 next_page = 2;
 }
 
 message Entry {

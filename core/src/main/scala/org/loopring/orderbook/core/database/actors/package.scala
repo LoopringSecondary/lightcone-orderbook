@@ -18,7 +18,7 @@
 
 package org.loopring.orderbook.core.database
 
-import org.loopring.orderbook.proto.depth.{ OrderBaseInfo, SetMarket }
+import org.loopring.orderbook.proto.depth.{ DepthUpdateEvent, SetMarket }
 import org.loopring.orderbook.lib.math.Rational
 import org.loopring.orderbook.lib.etypes._
 
@@ -35,7 +35,7 @@ package object actors {
     }
   }
 
-  implicit class RichOrderBaseInfo(src: OrderBaseInfo) {
+  implicit class RichDepthUpdateEvent(src: DepthUpdateEvent) {
 
     def getPrice: Rational = {
       Rational.apply(src.amountS.asBigInt, src.amountB.asBigInt)
