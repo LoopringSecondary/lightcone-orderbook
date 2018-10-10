@@ -19,6 +19,7 @@ package org.loopring.orderbook.lib
 import java.math.BigInteger
 
 import com.google.protobuf.ByteString
+import org.loopring.orderbook.lib.math.Rational
 import org.web3j.utils.Numeric
 
 package object etypes {
@@ -39,7 +40,9 @@ package object etypes {
 
     def asHash: Hash = hex.getBytes.asHash()
 
-    def asBigInt: BigInt = Numeric.toBigInt(hex)
+    def asBigInt: BigInt = BigInt(hex)
+
+    def asRational: Rational = Rational(BigInt(hex))
 
     def asBigInteger: BigInteger = Numeric.toBigInt(hex)
 

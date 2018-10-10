@@ -25,20 +25,26 @@ import slick.jdbc.MySQLProfile.api._
 import scala.concurrent.Future
 
 case class QueryCondition(
-  delegateAddress: String = "",
-  owner: Option[String] = None,
-  market: Option[String] = None,
-  status: Seq[String] = Seq(),
-  orderHashes: Seq[String] = Seq(),
-  side: Option[String] = None)
+                           delegateAddress: String = "",
+                           owner: Option[String] = None,
+                           market: Option[String] = None,
+                           status: Seq[String] = Seq(),
+                           orderHashes: Seq[String] = Seq(),
+                           side: Option[String] = None)
 
 trait OrdersDal extends BaseDalImpl[Orders, Order] {
   def getOrder(orderHash: String): Future[Option[Order]]
+
   def getOrders(condition: QueryCondition, skip: Int, take: Int): Future[Seq[Order]]
+
   def count(condition: QueryCondition): Future[Int]
+
   def getOrders(condition: QueryCondition): Future[Seq[Order]]
+
   def getOrdersWithCount(condition: QueryCondition, skip: Int, take: Int): (Future[Seq[Order]], Future[Int])
+
   def saveOrder(order: Order): Future[Int]
+
   def unwrapCondition(condition: QueryCondition): Query[Orders, Order, Seq]
 }
 

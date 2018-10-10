@@ -18,5 +18,6 @@ package org.loopring.orderbook.core.database.base
 
 trait BaseEntity {
   val id: Long
+
   def isValid: Boolean = true
 }

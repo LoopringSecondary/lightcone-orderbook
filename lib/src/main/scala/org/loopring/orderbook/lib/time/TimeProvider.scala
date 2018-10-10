@@ -20,7 +20,9 @@ import java.sql.Timestamp
 
 trait TimeProvider {
   def getTimeMillis: Long
+
   def getTimeSeconds: Long = getTimeMillis / 1000
+
   def getTimestamp = new Timestamp(getTimeMillis)
 }
 
