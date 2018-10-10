@@ -69,7 +69,7 @@ class DepthManager(orderBookManager: ActorRef)(
 
     case r: GetDepthReq =>
       inThisMarket(r.tokenS, r.tokenB, market) {
-        assert(precisedMap.contains(r.granularity))
+        require(precisedMap.contains(r.granularity))
         val a = assemble(r.granularity, true).values.toSeq.reverse.take(r.size)
         val b = assemble(r.granularity, false).values.toSeq.reverse.take(r.size)
         GetDepthRes(asks = a, bids = b)
