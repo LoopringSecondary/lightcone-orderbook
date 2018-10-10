@@ -109,7 +109,7 @@ class DepthManager(orderBookManager: ActorRef)(
 
       val newPrice = middlePrice(entry.price, granularity)
       val newEntry = dest.getOrElse(newPrice, Entry(newPrice, 0, BigInt(0).toString()))
-      val newAmount = newEntry.amount.asBigInteger.add(a._2.amount.asBigInteger)
+      val newAmount = BigInt(newEntry.amount).bigInteger.add(BigInt(a._2.amount).bigInteger)
 
       dest += newPrice -> newEntry.copy(price = newPrice, size = newEntry.size + a._2.size, amount = newAmount.toString)
     }
@@ -117,9 +117,33 @@ class DepthManager(orderBookManager: ActorRef)(
   }
 
   private def middlePrice(price: Double, granularity: Double) = {
-    val s = (granularity - granularity.floor).toString.size
-    val high = price + granularity / 2
-    ((high / granularity).round * granularity).scaled(8)
+    if (price <= granularity) {
+      granularity
+    } else {
+      if (price > 0) {
+        ((price / granularity).round * granularity).doubleValue()
+      } else {
+        val p = precisedMap.getOrElse(granularity, 1)
+        ((price / granularity).round * granularity).scaled(p)
+      }
+    }
+  }
+
+  val precisedMap = Map[Double, Int](
+    0.1d -> 1,
+    0.01d -> 2,
+    0.001d -> 3,
+    0.0001d -> 4,
+    0.00001d -> 5,
+    0.000001d -> 6,
+    0.0000001d -> 7,
+    0.00000001d -> 8,
+    0.000000001d -> 9,
+    0.0000000001d -> 10,
+  )
+
+  private def getDoublePrecised(d: Double): Int = {
+    precisedMap.getOrElse(d, 1)
   }
 
 }

@@ -27,7 +27,7 @@ package object math {
 
     def scaled(s: Int) = BigDecimal(d).setScale(s, BigDecimal.RoundingMode.HALF_UP).toDouble
 
-    def precised = scaled(4)
+    def precised = scaled(8)
   }
 
 }
