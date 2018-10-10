@@ -62,13 +62,13 @@ class DepthManager(orderBookManager: ActorRef)(
       }
   }
 
-  private def getAskBidsFromOrderBoookManager(pageIndex: Int, isAsk: Boolean): Future[Unit] = for {
+  private def getAskBidsFromOrderBookManager(pageIndex: Int, isAsk: Boolean): Future[Unit] = for {
     res <- orderBookManager ? GetDepthOrderListReq(market.marketTokenAddr, market.exchangeTokenAddr, pageSize, pageIndex)
     _ = res match {
       case s: GetDepthOrderListRes =>
-        s.list.map(update(_))
+        s.list.map(update)
         if (s.nextPage > 0) {
-          getAskBidsFromOrderBoookManager(s.nextPage, isAsk)
+          getAskBidsFromOrderBookManager(s.nextPage, isAsk)
         }
       case _ =>
     }
