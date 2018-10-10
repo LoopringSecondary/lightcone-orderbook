@@ -18,43 +18,74 @@
 
 package org.loopring.orderbook.core.database.actors
 
-import akka.actor.Actor
-import org.loopring.orderbook.lib.math.Rational
+import akka.actor._
+import akka.pattern.ask
+import akka.util.Timeout
 import org.loopring.orderbook.lib.etypes._
 import org.loopring.orderbook.proto.depth._
 
-import scala.collection.mutable
 import scala.collection.SortedMap
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 // 依赖orderbook
 // 初始化: 从orderBook获取priceIndex
-class DepthManager extends Actor {
+class DepthManager(orderBookManager: ActorRef)(
+  implicit
+  timeout: Timeout,
+  ec: ExecutionContext) extends Actor {
 
   val numOfOrderBookToKeep = 100000
   var market = SetMarket()
+  val pageSize = 20
 
   var asks = SortedMap.empty[Double, Entry] // sell
   var bids = SortedMap.empty[Double, Entry] // buy
 
+  setAskBids(0, true)
+  setAskBids(0, false)
+
   override def receive: Receive = {
     case s: SetMarket => market = s
 
-    case s: DepthUpdateEvent =>
-      inThisMarket(s.tokenS, s.tokenB, market) {
-        s.isAsk(market) match {
-          case true =>
-          case false =>
-        }
-
+    case e: DepthUpdateEvent =>
+      inThisMarket(e.tokenS, e.tokenB, market) {
+        update(e)
       }
   }
 
-  def initAsks() = {
+  private def setAskBids(pageIndex: Int, isAsk: Boolean): Future[Unit] = for {
+    res <- orderBookManager ? GetDepthOrderListReq(market.marketTokenAddr, market.exchangeTokenAddr, pageSize, pageIndex)
+    _ = res match {
+      case s: GetDepthOrderListRes =>
+        s.list.map(update(_))
+        if (s.nextPage > 0) {
+          setAskBids(s.nextPage, isAsk)
+        }
+      case _ =>
+    }
+  } yield null
 
-  }
+  private def update(event: DepthUpdateEvent) = {
+    val price = event.getPrice.toDouble
+    val entry = Entry(price, event.size, event.amount)
+    val num = event.amount.asBigInt
 
-  def initBids = {
+    event.isAsk(market) match {
+      case true => if (event.size <= 0 || num.compare(BigInt(0)) <= 0) {
+        asks -= price
+      } else {
+        if (asks.size >= numOfOrderBookToKeep) asks.drop(1)
+        asks += price -> entry
+      }
 
+      case false => if (event.size <= 0 || num.compare(BigInt(0)) <= 0) {
+        bids -= price
+      } else {
+        if (bids.size >= numOfOrderBookToKeep) bids.drop(1)
+        bids += price -> entry
+      }
+    }
   }
 
 }
