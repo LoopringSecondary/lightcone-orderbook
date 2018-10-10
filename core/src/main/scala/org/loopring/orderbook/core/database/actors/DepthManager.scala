@@ -43,6 +43,19 @@ class DepthManager(orderBookManager: ActorRef)(
   var asks = SortedMap.empty[Double, Entry] // sell
   var bids = SortedMap.empty[Double, Entry] // buy
 
+  val precisedMap = Map[Double, Int](
+    0.1d -> 1,
+    0.01d -> 2,
+    0.001d -> 3,
+    0.0001d -> 4,
+    0.00001d -> 5,
+    0.000001d -> 6,
+    0.0000001d -> 7,
+    0.00000001d -> 8,
+    0.000000001d -> 9,
+    0.0000000001d -> 10,
+  )
+
   getAskBidsFromOrderBookManager(0, true)
   getAskBidsFromOrderBookManager(0, false)
 
@@ -56,6 +69,7 @@ class DepthManager(orderBookManager: ActorRef)(
 
     case r: GetDepthReq =>
       inThisMarket(r.tokenS, r.tokenB, market) {
+        assert(precisedMap.contains(r.granularity))
         val a = assemble(r.granularity, true).values.toSeq.reverse.take(r.size)
         val b = assemble(r.granularity, false).values.toSeq.reverse.take(r.size)
         GetDepthRes(asks = a, bids = b)
@@ -128,19 +142,6 @@ class DepthManager(orderBookManager: ActorRef)(
       }
     }
   }
-
-  val precisedMap = Map[Double, Int](
-    0.1d -> 1,
-    0.01d -> 2,
-    0.001d -> 3,
-    0.0001d -> 4,
-    0.00001d -> 5,
-    0.000001d -> 6,
-    0.0000001d -> 7,
-    0.00000001d -> 8,
-    0.000000001d -> 9,
-    0.0000000001d -> 10,
-  )
 
   private def getDoublePrecised(d: Double): Int = {
     precisedMap.getOrElse(d, 1)
