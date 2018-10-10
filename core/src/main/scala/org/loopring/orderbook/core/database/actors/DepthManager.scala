@@ -43,8 +43,8 @@ class DepthManager(orderBookManager: ActorRef)(
   var asks = SortedMap.empty[Double, Entry] // sell
   var bids = SortedMap.empty[Double, Entry] // buy
 
-  getAskBidsFromOrderBoookManager(0, true)
-  getAskBidsFromOrderBoookManager(0, false)
+  getAskBidsFromOrderBookManager(0, true)
+  getAskBidsFromOrderBookManager(0, false)
 
   override def receive: Receive = {
     case s: SetMarket => market = s
