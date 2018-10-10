@@ -70,22 +70,48 @@ class DepthManager(orderBookManager: ActorRef)(
     val price = event.getPrice.toDouble
     val entry = Entry(price, event.size, event.amount)
     val num = event.amount.asBigInt
+    val isAsk = event.isAsk(market)
+    var dest = if (isAsk) asks else bids
 
-    event.isAsk(market) match {
-      case true => if (event.size <= 0 || num.compare(BigInt(0)) <= 0) {
-        asks -= price
-      } else {
-        if (asks.size >= numOfOrderBookToKeep) asks.drop(1)
-        asks += price -> entry
-      }
-
-      case false => if (event.size <= 0 || num.compare(BigInt(0)) <= 0) {
-        bids -= price
-      } else {
-        if (bids.size >= numOfOrderBookToKeep) bids.drop(1)
-        bids += price -> entry
-      }
+    if (event.size <= 0 || num.compare(BigInt(0)) <= 0) {
+      dest -= price
+    } else {
+      if (dest.size >= numOfOrderBookToKeep) dest.drop(1)
+      dest += price -> entry
     }
+
+    if (isAsk) asks = dest else bids = dest
+  }
+
+  private def sort(granularity: Double, isAsk: Boolean) = {
+    var src = if (isAsk) asks else bids
+    var dest = SortedMap.empty[Double, Entry]
+
+    src.map { a =>
+      val entry = if (dest.size < 1) {
+        Entry(a._1, 0, BigInt(0).toString)
+      } else {
+        val temp = dest.dropWhile(_._1 < a._1 + granularity)
+        if (temp.size > 0) {
+          temp.head._2
+        } else {
+          Entry(a._1, 0, BigInt(0).toString)
+        }
+      }
+
+      val tmpPrice = middlePrice(entry.price, granularity)
+      val newPrice = priceConvertUp(tmpPrice)
+      val newEntry = dest.getOrElse(newPrice, OrderBook.Entry(newPrice, 0, 0))
+
+      dest += newPrice -> newEntry.copy(size = newEntry.size + a._2.size, count = newEntry.count + a._2.count)
+    }
+    dest
+  }
+
+  private def middlePrice(price: Double, granularity: Double) = {
+    val s = (granularity - granularity.floor).toString.size
+    val high = price + granularity / 2
+    ((high / granularity).round * granularity).scaled(s)
   }
 
 }

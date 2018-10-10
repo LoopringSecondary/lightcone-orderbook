@@ -41,6 +41,8 @@ message Entry {
 message GetDepthReq {
     string token_s = 1;
     string token_b = 2;
+    double granularity = 3; // 小数点后聚合位数
+    int32 size = 4; //
 }
 
 message GetDepthRes {
