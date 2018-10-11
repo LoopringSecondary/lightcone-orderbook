@@ -91,8 +91,8 @@ class Orders(tag: Tag) extends BaseTable[Order](tag, "ORDERS") {
     orderHash,
     validSince,
     validUntil) <> (
-    (RawOrder.apply _).tupled,
-    RawOrder.unapply)
+      (RawOrder.apply _).tupled,
+      RawOrder.unapply)
 
   private def extendTupled = (i: Tuple11[Long, RawOrder, String, String, String, String, String, String, Double, Long, Long]) ⇒
     Order.apply(

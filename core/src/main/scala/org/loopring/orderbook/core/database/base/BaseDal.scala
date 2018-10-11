@@ -20,7 +20,7 @@ import org.loopring.orderbook.core.database.OrderDatabase
 import slick.jdbc.MySQLProfile.api._
 import slick.lifted.CanBeQueryCondition
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 trait BaseDal[T, A] {
   def insert(row: A): Future[Long]

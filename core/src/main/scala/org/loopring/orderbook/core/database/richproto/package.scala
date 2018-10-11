@@ -17,8 +17,8 @@
 package org.loopring.orderbook.core.database
 
 import org.loopring.orderbook.lib.math.Rational
-import org.loopring.orderbook.proto.order.{OrderForMatch, RawOrder}
-import org.web3j.crypto.{Hash ⇒ web3Hash, _}
+import org.loopring.orderbook.proto.order.{ OrderForMatch, RawOrder }
+import org.web3j.crypto.{ Hash ⇒ web3Hash, _ }
 import org.web3j.utils.Numeric
 import org.loopring.orderbook.lib.etypes._
 

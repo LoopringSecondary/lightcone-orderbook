@@ -16,7 +16,7 @@
 
 package org.loopring.orderbook.lib.math
 
-import java.math.{MathContext, RoundingMode}
+import java.math.{ MathContext, RoundingMode }
 
 import scala.math._
 

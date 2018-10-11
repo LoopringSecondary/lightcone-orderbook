@@ -18,7 +18,7 @@
 
 package org.loopring.orderbook.core.database.actors
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.{ Actor, ActorRef }
 import org.loopring.orderbook.lib.math.Rational
 import org.loopring.orderbook.proto.order._
 import org.loopring.orderbook.lib.etypes._
@@ -27,7 +27,7 @@ import akka.pattern._
 import akka.util.Timeout
 
 import scala.collection.mutable
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 class PriceIndex() {
   var index = mutable.TreeMap[Rational, Set[String]]()
@@ -59,12 +59,12 @@ class PriceIndex() {
 }
 
 /**
-  * 保存订单
-  * 所有订单放置在orders中，根据不同情况放入不同的index中
-  * 查询时，根据index进行查询
-  *
-  * ordersWithPriceIdx 按照价格保存订单，保存的订单类型为：在有效期内的，包含delay的，不包含灰尘单
-  */
+ * 保存订单
+ * 所有订单放置在orders中，根据不同情况放入不同的index中
+ * 查询时，根据index进行查询
+ *
+ * ordersWithPriceIdx 按照价格保存订单，保存的订单类型为：在有效期内的，包含delay的，不包含灰尘单
+ */
 class OrderBook {
   var orders = mutable.HashMap[String, OrderWithAvailableStatus]()
 
@@ -99,7 +99,6 @@ class OrderWithAvailableStatus(order: OrderForMatch) {
   var availableAmountS = order.availableAmountS.asRational
   var availableLrcFee = order.availableLrcFee.asRational
 
-
   def subAvailable(amountS: Rational, lrcFee: Rational): Boolean = {
     this.synchronized {
       //todo:可以进一步细化返回值
@@ -127,21 +126,21 @@ class OrderWithAvailableStatus(order: OrderForMatch) {
 }
 
 /**
-  * 接收到新订单之后，先向对手方向请求撮合，根据撮合结果，确定订单的状态是否为defer
-  * 如果为defer，则不发给depth，否则发给depth
-  *
-  * 定时器:
-  * 1、定时获取对手方向的最大价格，根据最大价格，将未defer的订单，发给对手方撮合，确定订单状态
-  * 2、定时根据validsince和validuntil增加和删除订单
-  * 3、定时检测defer的订单，过了defer时间，则发给对手方撮合，再确定状态
-  *
-  * 需要保存内容：
-  * 1、订单的可用金额，包括settling和balance
-  * 2、
-  */
+ * 接收到新订单之后，先向对手方向请求撮合，根据撮合结果，确定订单的状态是否为defer
+ * 如果为defer，则不发给depth，否则发给depth
+ *
+ * 定时器:
+ * 1、定时获取对手方向的最大价格，根据最大价格，将未defer的订单，发给对手方撮合，确定订单状态
+ * 2、定时根据validsince和validuntil增加和删除订单
+ * 3、定时检测defer的订单，过了defer时间，则发给对手方撮合，再确定状态
+ *
+ * 需要保存内容：
+ * 1、订单的可用金额，包括settling和balance
+ * 2、
+ */
 class OrderBookManager(
-                        tokenA: String,
-                        tokenB: String) {
+  tokenA: String,
+  tokenB: String) {
   var tokenAOrderBook = new OrderBook()
   var tokenBOrderBook = new OrderBook()
 
@@ -168,34 +167,34 @@ class OrderBookManager(
     //todo:int.max_value should be instead.
     val matchStatus = orderbook.range(Rational(1) / sellPrice, Rational(Integer.MAX_VALUE)).foldLeft {
       MatchStatus(
-        remainedOtherOrder = otherOrder, rings = Seq[Ring](), sellPrice = Rational(0)
-      )
+        remainedOtherOrder = otherOrder, rings = Seq[Ring](), sellPrice = Rational(0))
     } {
-      (status, order) ⇒ {
-        if (status.remainedOtherOrder.availableAmountS > Rational(0)) {
-          val ring = calReceived(status.remainedOtherOrder, order)
+      (status, order) ⇒
+        {
+          if (status.remainedOtherOrder.availableAmountS > Rational(0)) {
+            val ring = calReceived(status.remainedOtherOrder, order)
 
-          var (otherFilledOrder, filledOrder) = if (ring.orders.head.rawOrder.hash.equalsIgnoreCase(status.remainedOtherOrder.rawOrder.hash)) {
-            (ring.orders.head, ring.orders(1))
-          } else {
-            (ring.orders(1), ring.orders.head)
-          }
-          //todo：需要确定隐藏的价格，以及删除完全匹配的订单
-          if (status.remainedOtherOrder.subAvailable(otherFilledOrder.filledAmountS, otherFilledOrder.lrcFee)) {
-            if (order.subAvailable(filledOrder.filledAmountS, filledOrder.lrcFee)) {
-              //及时删除
-              status.copy(remainedOtherOrder = status.remainedOtherOrder, rings = status.rings :+ ring)
+            var (otherFilledOrder, filledOrder) = if (ring.orders.head.rawOrder.hash.equalsIgnoreCase(status.remainedOtherOrder.rawOrder.hash)) {
+              (ring.orders.head, ring.orders(1))
             } else {
-              status.remainedOtherOrder.addAvailable(otherFilledOrder.filledAmountS, otherFilledOrder.lrcFee)
+              (ring.orders(1), ring.orders.head)
+            }
+            //todo：需要确定隐藏的价格，以及删除完全匹配的订单
+            if (status.remainedOtherOrder.subAvailable(otherFilledOrder.filledAmountS, otherFilledOrder.lrcFee)) {
+              if (order.subAvailable(filledOrder.filledAmountS, filledOrder.lrcFee)) {
+                //及时删除
+                status.copy(remainedOtherOrder = status.remainedOtherOrder, rings = status.rings :+ ring)
+              } else {
+                status.remainedOtherOrder.addAvailable(otherFilledOrder.filledAmountS, otherFilledOrder.lrcFee)
+                status
+              }
+            } else {
               status
             }
           } else {
             status
           }
-        } else {
-          status
         }
-      }
     }
 
     println(matchStatus)
@@ -251,19 +250,18 @@ case class FilledOrder(rawOrder: RawOrder, filledAmountS: Rational, lrcFee: Rati
 case class Ring(received: Rational, orders: Seq[FilledOrder])
 
 /**
-  * 一轮匹配之后，需要决定，订单的剩余金额、深度价格、影响到深度价格的所有价格对应的交易量和数量，订单缩减完成
-  * 1、如果有剩余的金额，则需要隐藏部分订单
-  * 2、如果没有剩余金额，则不用管
-  * 3、匹配过程中需要同步更改lrcfee和availableamounts
-  * 4、匹配完成后，更改所有影响到的sellprice给depth，影响到的depth可能是两个方向的，一旦吃掉最高价之后，也需要移动sellprice
-  */
+ * 一轮匹配之后，需要决定，订单的剩余金额、深度价格、影响到深度价格的所有价格对应的交易量和数量，订单缩减完成
+ * 1、如果有剩余的金额，则需要隐藏部分订单
+ * 2、如果没有剩余金额，则不用管
+ * 3、匹配过程中需要同步更改lrcfee和availableamounts
+ * 4、匹配完成后，更改所有影响到的sellprice给depth，影响到的depth可能是两个方向的，一旦吃掉最高价之后，也需要移动sellprice
+ */
 case class MatchStatus(remainedOtherOrder: OrderWithAvailableStatus, rings: Seq[Ring], sellPrice: Rational)
 
-
 /**
-  * 新订单，首先进行撮合，然后选择sellprice来确定深度图的价格，然后缩减相应的订单剩余金额
-  * 匹配之后，本轮的最大价格，根据该价格释放隐藏的深度
-  */
+ * 新订单，首先进行撮合，然后选择sellprice来确定深度图的价格，然后缩减相应的订单剩余金额
+ * 匹配之后，本轮的最大价格，根据该价格释放隐藏的深度
+ */
 
 object Main {
   def main(args: Array[String]): Unit = {
@@ -271,15 +269,12 @@ object Main {
     val order1 = new OrderWithAvailableStatus(OrderForMatch(
       rawOrder = Some(RawOrder(tokenS = "a", tokenB = "b", amountS = "10", amountB = "100", lrcFee = "100", hash = "hash1")),
       availableLrcFee = "3",
-      availableAmountS = "6")
-    )
+      availableAmountS = "6"))
     val order2 = new OrderWithAvailableStatus(
       OrderForMatch(
         rawOrder = Some(RawOrder(tokenS = "a", tokenB = "b", amountS = "5", amountB = "100", lrcFee = "20", hash = "hash2")),
         availableAmountS = "5",
-        availableLrcFee = "10"
-      )
-    )
+        availableLrcFee = "10"))
     manager.tokenAOrderBook.addOrUpdateOrder(order1)
     manager.tokenAOrderBook.addOrUpdateOrder(order2)
 
@@ -287,21 +282,15 @@ object Main {
     val orders = manager.tokenAOrderBook.range(Rational(0, 1), Rational(6, 100))
     println(orders, orders.size)
 
-
     val otherOrder1 = new OrderWithAvailableStatus(
       OrderForMatch(
         rawOrder = Some(RawOrder(tokenS = "b", tokenB = "a", amountS = "100", amountB = "10", lrcFee = "10", hash = "otherhash1")),
         availableLrcFee = "3",
-        availableAmountS = "7"
-      ))
+        availableAmountS = "7"))
     val ring = manager.matchOrderAndDecideDepthPrice(otherOrder1)
     println(ring)
     println(manager.tokenAOrderBook.orders, manager.tokenAOrderBook.ordersWithPriceIdx.index)
     println(otherOrder1)
   }
 }
-
-
-
-
 

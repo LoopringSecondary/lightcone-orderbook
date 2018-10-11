@@ -20,9 +20,11 @@ package org.loopring.orderbook.core.database.actors
 
 import akka.actor._
 import akka.util.Timeout
+import org.loopring.orderbook.proto.order.{ Order, OrderForMatch }
 import org.loopring.orderbook.proto.deployment.OrderAmountFacilitatorSettings
 import org.loopring.orderbook.proto.account._
 
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext
 
 // 1.所有非终态订单存储到内存
@@ -36,13 +38,19 @@ class OrderAmountFacilitator(orderBookManager: ActorRef)(
   ec: ExecutionContext) extends Actor {
 
   var market = ""
-
+  var ordermap = mutable.HashMap.empty[String, OrderForMatch]
   override def receive: Receive = {
     case s: OrderAmountFacilitatorSettings => market = s.tokenS.toLowerCase
 
     case e: AllowanceChangedEvent =>
+      matchToken(e.token) {
+
+      }
 
     case e: BalanceChangedEvent =>
+      matchToken(e.token) {
+
+      }
   }
 
   def matchToken(token: String)(op: => Any) = {

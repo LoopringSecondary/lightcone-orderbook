@@ -25,10 +25,10 @@ import slick.jdbc.JdbcProfile
 
 import scala.concurrent.ExecutionContext
 
-class MysqlOrderDatabase @Inject()(
-                                    val dbConfig: DatabaseConfig[JdbcProfile],
-                                    val timeProvider: TimeProvider,
-                                    @Named("db-execution-context") val dbec: ExecutionContext) extends OrderDatabase {
+class MysqlOrderDatabase @Inject() (
+  val dbConfig: DatabaseConfig[JdbcProfile],
+  val timeProvider: TimeProvider,
+  @Named("db-execution-context") val dbec: ExecutionContext) extends OrderDatabase {
 
   val orders = new OrdersDalImpl(this)
 
