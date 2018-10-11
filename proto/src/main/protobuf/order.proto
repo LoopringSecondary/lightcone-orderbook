@@ -25,16 +25,17 @@ message RawOrder {
     string token_b = 2;
     string amount_s = 3;
     string amount_b = 4;
-    string lrc_fee = 5;
-    bool buy_no_more_than_amount_b = 6;
-    int32 margin_split_percentage = 7;
-    string owner = 8;
-    string wallet_address = 9;
-    string auth_addr = 10;
-    string auth_private_key = 11;
-    string hash = 12;
-    int64 valid_since = 13;
-    int64 valid_until = 14;
+    string fee = 5;
+    string fee_addr = 6;
+    bool buy_no_more_than_amount_b = 7;
+    int32 margin_split_percentage = 8;
+    string owner = 9;
+    string wallet_address = 10;
+    string auth_addr = 11;
+    string auth_private_key = 12;
+    string hash = 13;
+    int64 valid_since = 14;
+    int64 valid_until = 15;
 }
 
 message OrderState {
@@ -75,9 +76,9 @@ message OrderUpdateEvent {
 
 message OrderForMatch {
     RawOrder raw_order = 1;
-    string available_amount_s = 2; //订单的可成交量
+    string available_amount_s = 2; //订单的可成交量s, a1 = min(balance,allowance), a2 = (amountS - dealtAndCancel), s = (a1 > a2)? a2 : a1
     string fee_address = 3;
-    string available_fee = 4;
+    string available_fee = 4; // 订单的可用lrcFee f = min(lrc_balance, lrc_allowance, lrcfee - dealtLrcFee)
 }
 
 message OrderBeforeMatch {

@@ -19,6 +19,7 @@
 package org.loopring.orderbook.core.database.actors
 
 import akka.actor._
+import akka.pattern.ask
 import akka.util.Timeout
 import org.loopring.orderbook.lib.etypes._
 import org.loopring.orderbook.proto.order._
@@ -33,7 +34,7 @@ import scala.concurrent.ExecutionContext
 // 3.发送信息给OrderBookManager
 // 4.只管理订单tokenS
 
-class OrderManager(orderBookManager: ActorRef)(
+class OrderManager(orderBookManager: ActorRef, accountManager: ActorRef)(
   implicit
   timeout: Timeout,
   ec: ExecutionContext) extends Actor {
@@ -46,7 +47,13 @@ class OrderManager(orderBookManager: ActorRef)(
   override def receive: Receive = {
     case s: OrderAmountFacilitatorSettings => market = s.tokenS.toLowerCase
 
-    case o: OrderState => addNewOrder(o)
+    case o: OrderState => for {
+      res <- accountManager ? GetAllowanceAndBalanceReq(o.getRawOrder.owner.safe, o.getRawOrder.tokenS.safe)
+      _ = res match {
+        case r: GetAllowanceAndBalanceRes => addNewOrder(o, r.getAccount.allowance, r.getAccount.balance)
+        case _ =>
+      }
+    } yield null
 
     case u: OrderUpdateEvent =>
 
@@ -71,13 +78,51 @@ class OrderManager(orderBookManager: ActorRef)(
 
   // orderState已从链上获取成交量取消量
   // todo 从accountManager获取balance&allowance
-  private def addNewOrder(order: OrderState) = {
+  private def addNewOrder(order: OrderState, allowance: String, balance: String) = {
+    val orderBeforeMatch = OrderBeforeMatch(
+      dealtAmountS = order.dealtAmountS,
+      cancelAmountS = order.cancelAmountS,
+      totalAllowance = allowance,
+      totalBalance = balance,
+      availableAllowance = allowance,
+      availableBalance = balance
+    )
+
     if (ordermap.contains(order.getRawOrder.owner.safe)) {
 
     } else {
       var sortedMap = SortedMap.empty[Long, OrderBeforeMatch]
       val orderBeforeMatch = OrderBeforeMatch()
     }
+  }
+
+  private def getOrderForMatchWithoutFee(state: OrderState, account: Account, feeAccount: Account): OrderForMatch = {
+    val orderAvailableAmountS = state.availableAmountS()
+    val accountAvailableAmount = account.min
+    val availableAmountS = if (accountAvailableAmount.compare(orderAvailableAmountS) > 0) {
+      orderAvailableAmountS
+    } else {
+      accountAvailableAmount
+    }
+
+    val orderAvailableFee = state.availableFee()
+    val accountAvailableFee = feeAccount.min
+    val availableFee = if (accountAvailableFee.compare(orderAvailableFee) > 0) {
+      orderAvailableFee
+    } else {
+      accountAvailableFee
+    }
+
+    OrderForMatch(
+      rawOrder = state.rawOrder,
+      feeAddress = state.getRawOrder.feeAddr.safe,
+      availableAmountS = availableAmountS.toString,
+      availableFee = availableFee.toString()
+    )
+  }
+
+  private def getOrderForMatchWithFee(state: OrderState, account: Account): OrderForMatch = {
+
   }
 
   private def notify(ord: OrderBeforeMatch, event: AllowanceChangedEvent): OrderMatchNotifyEvent = {
@@ -110,20 +155,6 @@ class OrderManager(orderBookManager: ActorRef)(
     //      val result = op
     //    }
     val result = op
-  }
-
-  private def afterDealtAndCancelAmount(orderBeforeMatch: OrderBeforeMatch): BigInt = {
-    val rawOrder = orderBeforeMatch.getMatch.getRawOrder
-    val totalAmountS = rawOrder.amountS.asBigInt
-    val dealtAmountS = orderBeforeMatch.dealtAmountS.asBigInt.bigInteger
-    val cancelAmountS = orderBeforeMatch.cancelAmountS.asBigInt.bigInteger
-    val dealtAndCancelAmount = dealtAmountS.add(cancelAmountS)
-
-    if (totalAmountS.compare(dealtAndCancelAmount) > 0) {
-      BigInt(totalAmountS.bigInteger.subtract(dealtAndCancelAmount))
-    } else {
-      BigInt(0)
-    }
   }
 
   // todo 应该根据marketCap计算订单状态,这里暂时替代下

@@ -88,6 +88,10 @@ class Rational(numerator: BigInt, denominator: BigInt)
     (BigDecimal(this.num) / BigDecimal(this.denom)).doubleValue()
   }
 
+  def bigintValue(): BigInt = {
+    this.num / this.denom
+  }
+
   override def toString: String = s"${this.num.toString()}/${this.denom.toString()}"
 
   def floatString(precisionOpt: Option[Int] = None): String = {

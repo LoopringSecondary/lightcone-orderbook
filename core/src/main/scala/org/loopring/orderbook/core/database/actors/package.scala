@@ -20,9 +20,10 @@ package org.loopring.orderbook.core.database
 
 import org.loopring.orderbook.proto.deployment.{ DepthManagerSettings, MarketConfig }
 import org.loopring.orderbook.proto.depth.DepthUpdateEvent
-import org.loopring.orderbook.proto.order.{ OrderBeforeMatch, OrderForMatch }
+import org.loopring.orderbook.proto.order.{ OrderBeforeMatch, OrderForMatch, OrderState }
 import org.loopring.orderbook.lib.math.Rational
 import org.loopring.orderbook.lib.etypes._
+import org.loopring.orderbook.proto.account.Account
 
 package object actors {
 
@@ -40,6 +41,56 @@ package object actors {
   implicit class RichAddress(src: String) {
 
     def safe = src.toLowerCase
+  }
+
+  implicit class RichAccount(src: Account) {
+
+    def min: BigInt = {
+      if (src.allowance.asBigInt.compare(src.balance.asBigInt) < 0) {
+        src.allowance.asBigInt
+      } else {
+        src.balance.asBigInt
+      }
+    }
+
+    def max: BigInt = {
+      if (src.allowance.asBigInt.compare(src.balance.asBigInt) < 0) {
+        src.balance.asBigInt
+      } else {
+        src.allowance.asBigInt
+      }
+    }
+  }
+
+  implicit class RichOrderState(src: OrderState) {
+
+    def availableAmountS(): BigInt = {
+      val rawOrder = src.getRawOrder
+      val totalAmountS = rawOrder.amountS.asBigInt
+      val dealtAmountS = src.dealtAmountS.asBigInt.bigInteger
+      val cancelAmountS = src.cancelAmountS.asBigInt.bigInteger
+      val dealtAndCancelAmount = dealtAmountS.add(cancelAmountS)
+
+      if (totalAmountS.compare(dealtAndCancelAmount) > 0) {
+        BigInt(totalAmountS.bigInteger.subtract(dealtAndCancelAmount))
+      } else {
+        BigInt(0)
+      }
+    }
+
+    def availableFee(): BigInt = {
+      val rawOrder = src.getRawOrder
+      val rawFee = rawOrder.fee.asRational
+      val fillRate = src.dealtAmountS.asRational / Rational(rawOrder.amountS.asBigInt)
+      val dealtFee = fillRate * Rational(rawOrder.fee.asBigInt)
+
+      if (rawFee.compare(dealtFee) > 0) {
+        (rawFee - dealtFee).bigintValue()
+      } else {
+        BigInt(0)
+      }
+    }
+
   }
 
   implicit class RichDepthUpdateEvent(src: DepthUpdateEvent) {

@@ -29,6 +29,5 @@ message GetAllowanceAndBalanceReq {
 }
 
 message GetAllowanceAndBalanceRes {
-    string allowance = 1;
-    string balance = 2;
+    Account account = 1;
 }

@@ -23,7 +23,7 @@ import org.loopring.orderbook.proto.account._
 
 import scala.collection.mutable
 
-class BalanceManager extends Actor {
+class AccountManager extends Actor {
 
   // map[owner, map[token_address, Account]]
   var accountmap = mutable.HashMap.empty[String, mutable.HashMap[String, Account]]
@@ -50,7 +50,7 @@ class BalanceManager extends Actor {
       val account = tokenmap.get(r.tokenAddr.safe)
       require(account.balance.nonEmpty)
       require(account.allowance.nonEmpty)
-      GetAllowanceAndBalanceRes(allowance = account.allowance, balance = account.balance)
+      GetAllowanceAndBalanceRes().withAccount(account)
   }
 
 }
