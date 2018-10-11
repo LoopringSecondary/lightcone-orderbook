@@ -19,7 +19,38 @@
 package org.loopring.orderbook.core.database.actors
 
 import akka.actor.Actor
+import org.loopring.orderbook.proto.account._
+
+import scala.collection.mutable
 
 class BalanceManager extends Actor {
-  override def receive: Receive = ???
+
+  // map[owner, map[token_address, Account]]
+  var accountmap = mutable.HashMap.empty[String, mutable.HashMap[String, Account]]
+
+  override def receive: Receive = {
+    case a: AllowanceChangedEvent =>
+      val account = Account(owner = a.owner.safe, token = a.token.safe, allowance = a.currentAmount)
+      val tokenmap = accountmap.getOrElse(a.owner.safe, mutable.HashMap.empty[String, Account])
+      val exsit = tokenmap.getOrElse(a.token.safe, account)
+      tokenmap += a.token.safe -> exsit.copy(allowance = a.currentAmount)
+      accountmap += a.owner.safe -> tokenmap
+
+    case a: BalanceChangedEvent =>
+      val account = Account(owner = a.owner.safe, token = a.token.safe, balance = a.currentAmount)
+      val tokenmap = accountmap.getOrElse(a.owner.safe, mutable.HashMap.empty[String, Account])
+      val exist = tokenmap.getOrElse(a.token.safe, account)
+      tokenmap += a.token.safe -> exist.copy(balance = a.currentAmount)
+      accountmap += a.owner.safe -> tokenmap
+
+    case r: GetAllowanceAndBalanceReq =>
+      require(accountmap.contains(r.owner.safe))
+      val tokenmap = accountmap.get(r.owner.safe)
+      require(tokenmap.contains(r.tokenAddr.safe))
+      val account = tokenmap.get(r.tokenAddr.safe)
+      require(account.balance.nonEmpty)
+      require(account.allowance.nonEmpty)
+      GetAllowanceAndBalanceRes(allowance = account.allowance, balance = account.balance)
+  }
+
 }

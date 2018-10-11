@@ -15,3 +15,20 @@ message BalanceChangedEvent {
     string owner = 2;
     string current_amount = 3;
 }
+
+message Account {
+    string owner = 1;
+    string token = 2;
+    string balance = 3;
+    string allowance = 4;
+}
+
+message GetAllowanceAndBalanceReq {
+    string owner = 1;
+    string token_addr = 2;
+}
+
+message GetAllowanceAndBalanceRes {
+    string allowance = 1;
+    string balance = 2;
+}

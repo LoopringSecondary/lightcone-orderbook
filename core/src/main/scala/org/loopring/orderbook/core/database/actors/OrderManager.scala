@@ -25,7 +25,7 @@ import org.loopring.orderbook.proto.order._
 import org.loopring.orderbook.proto.deployment.OrderAmountFacilitatorSettings
 import org.loopring.orderbook.proto.account._
 
-import scala.collection.mutable
+import scala.collection.{SortedMap, mutable}
 import scala.concurrent.ExecutionContext
 
 // 1.所有非终态订单存储到内存
@@ -39,9 +39,16 @@ class OrderManager(orderBookManager: ActorRef)(
   ec: ExecutionContext) extends Actor {
 
   var market = ""
-  var ordermap = mutable.HashMap.empty[String, OrderBeforeMatch]
+
+  // 对同一个用户地址的订单进行聚合，
+  // hashmap[string, sortMap[create_time, orderBeforeMatch]]
+  var ordermap = mutable.HashMap.empty[String, SortedMap[Long, OrderBeforeMatch]]
   override def receive: Receive = {
     case s: OrderAmountFacilitatorSettings => market = s.tokenS.toLowerCase
+
+    case o: OrderState => addNewOrder(o)
+
+    case u: OrderUpdateEvent =>
 
     case e: AllowanceChangedEvent =>
       onThisActor() {
@@ -60,6 +67,17 @@ class OrderManager(orderBookManager: ActorRef)(
           case _ =>
         }
       }
+  }
+
+  // orderState已从链上获取成交量取消量
+  // todo 从accountManager获取balance&allowance
+  private def addNewOrder(order: OrderState) = {
+    if (ordermap.contains(order.getRawOrder.owner.safe)) {
+
+    } else {
+      var sortedMap = SortedMap.empty[Long, OrderBeforeMatch]
+      val orderBeforeMatch = OrderBeforeMatch()
+    }
   }
 
   private def notify(ord: OrderBeforeMatch, event: AllowanceChangedEvent): OrderMatchNotifyEvent = {

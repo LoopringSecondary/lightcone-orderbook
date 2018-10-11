@@ -84,8 +84,10 @@ message OrderBeforeMatch {
     OrderForMatch match = 1;
     string dealt_amount_s = 2;
     string cancel_amount_s = 3;
-    string allowance = 4;
-    string balance = 5;
+    string total_allowance = 4;
+    string available_allowance = 5;
+    string total_balance = 6;
+    string available_balance = 7;
 }
 
 enum OrderMatchNotifyType {
