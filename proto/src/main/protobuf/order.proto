@@ -4,6 +4,12 @@ option java_multiple_files = true;
 option java_package = "org.loopring.orderbook.proto";
 package org.loopring.orderbook.proto;
 
+
+///////////////////////////////////
+// order and order state
+//
+///////////////////////////////////
+
 enum OrderStatus {
     ORDER_STATUS_UNKNOWN = 0;
     ORDER_STATUS_NEW = 1;
@@ -31,26 +37,75 @@ message RawOrder {
     int64 valid_until = 14;
 }
 
-message Order {
+message OrderState {
    int64 id = 1;
    RawOrder raw_order = 2;
    string dealt_amount_s = 3;
    string dealt_amount_b = 4;
-   string delay_cause = 5;
-   OrderStatus status = 6;
-   string market = 7;
-   string side = 8;
-   double price = 9;
-   int64 createdAt = 10;
-   int64 updatedAt = 11;
+   string cancel_amount_s = 5;
+   string cancel_amount_b = 6;
+   string delay_cause = 7;
+   OrderStatus status = 8;
+   string market = 9;
+   string side = 10;
+   double price = 11;
+   int64 updated_block = 12;
+   int64 createdAt = 13;
+   int64 updatedAt = 14;
 }
+
+///////////////////////////////////
+// order update event
+// req & res onchain
+///////////////////////////////////
+
+message OrderUpdateEvent {
+    string order_hash = 1;
+    string owner = 2;
+    string dealt_amount_s = 3;
+    string dealt_amount_b = 4;
+    string cancel_amount_s = 5;
+    string cancel_amount_b = 6;
+}
+
+///////////////////////////////////
+// data struct and event for matchengine
+//
+///////////////////////////////////
 
 message OrderForMatch {
     RawOrder raw_order = 1;
-    string available_amount_s = 2;
+    string available_amount_s = 2; //订单的可成交量
     string fee_address = 3;
     string available_fee = 4;
 }
+
+message OrderBeforeMatch {
+    OrderForMatch match = 1;
+    string dealt_amount_s = 2;
+    string cancel_amount_s = 3;
+    string allowance = 4;
+    string balance = 5;
+}
+
+enum OrderMatchNotifyType {
+    ORDER_UNKNOWN = 0;
+    ORDER_NEW = 1;
+    ORDER_REM = 2;
+    ORDER_ADD = 3;
+    ORDER_SUB = 4;
+}
+
+message OrderMatchNotifyEvent {
+    OrderForMatch match = 1;
+    OrderMatchNotifyType notify_type = 2;
+}
+
+///////////////////////////////////
+//
+// request and response
+//
+///////////////////////////////////
 
 message GetMaxPriceReq {
 }
@@ -59,7 +114,6 @@ message GetMaxPriceRes {
    string amount_s = 1;
    string amount_b = 2;
 }
-
 
 message StartNewRound {
 }

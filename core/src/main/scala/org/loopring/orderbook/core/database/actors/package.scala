@@ -20,6 +20,7 @@ package org.loopring.orderbook.core.database
 
 import org.loopring.orderbook.proto.deployment.{ DepthManagerSettings, MarketConfig }
 import org.loopring.orderbook.proto.depth.DepthUpdateEvent
+import org.loopring.orderbook.proto.order.{ OrderBeforeMatch, OrderForMatch }
 import org.loopring.orderbook.lib.math.Rational
 import org.loopring.orderbook.lib.etypes._
 
@@ -36,6 +37,11 @@ package object actors {
     }
   }
 
+  implicit class RichAddress(src: String) {
+
+    def safe = src.toLowerCase
+  }
+
   implicit class RichDepthUpdateEvent(src: DepthUpdateEvent) {
 
     def getPrice: Rational = {
@@ -47,6 +53,15 @@ package object actors {
       src.tokenS.toLowerCase.equals(market.exchangeToken.toLowerCase)
     }
 
+  }
+
+  implicit class RichOrderForMatch(src: OrderForMatch) {
+
+    def tokenIsFee: Boolean = if (src.getRawOrder.tokenS.safe.equals(src.feeAddress)) {
+      true
+    } else {
+      false
+    }
   }
 
 }
