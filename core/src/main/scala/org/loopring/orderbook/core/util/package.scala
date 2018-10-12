@@ -73,5 +73,10 @@ package object util {
       }
     }
 
+    def tokenIsFee(): Boolean = {
+      val ord = src.getRawOrder
+      ord.feeAddr.safe.equals(ord.feeAddr.safe)
+    }
+
   }
 }

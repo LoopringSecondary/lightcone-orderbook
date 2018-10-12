@@ -74,34 +74,27 @@ message OrderUpdateEvent {
 //
 ///////////////////////////////////
 
+enum OrderForMatchType {
+    ORDER_UNKNOWN = 0;
+    ORDER_NEW = 1;
+    ORDER_REM = 2;
+    ORDER_UPDATE = 3;
+}
+
 message OrderForMatch {
     RawOrder raw_order = 1;
     string available_amount_s = 2; //订单的可成交量s, a1 = min(balance,allowance), a2 = (amountS - dealtAndCancel), s = (a1 > a2)? a2 : a1
     string fee_address = 3;
     string available_fee = 4; // 订单的可用lrcFee f = min(lrc_balance, lrc_allowance, lrcfee - dealtLrcFee)
+    OrderForMatchType match_type = 5;
 }
 
 message OrderBeforeMatch {
-    OrderForMatch match = 1;
-    string dealt_amount_s = 2;
-    string cancel_amount_s = 3;
-    string total_allowance = 4;
-    string available_allowance = 5;
-    string total_balance = 6;
-    string available_balance = 7;
-}
-
-enum OrderMatchNotifyType {
-    ORDER_UNKNOWN = 0;
-    ORDER_NEW = 1;
-    ORDER_REM = 2;
-    ORDER_ADD = 3;
-    ORDER_SUB = 4;
-}
-
-message OrderMatchNotifyEvent {
-    OrderForMatch match = 1;
-    OrderMatchNotifyType notify_type = 2;
+    OrderState state = 1;
+    string token_s_allowance = 2;
+    string token_s_balance = 3;
+    string fee_allowance = 4;
+    string fee_balance = 5;
 }
 
 ///////////////////////////////////

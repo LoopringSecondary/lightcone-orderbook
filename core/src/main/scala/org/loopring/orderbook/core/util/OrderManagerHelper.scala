@@ -17,7 +17,7 @@
 package org.loopring.orderbook.core.util
 
 import org.loopring.orderbook.proto.account.Account
-import org.loopring.orderbook.proto.order.{ OrderForMatch, OrderState }
+import org.loopring.orderbook.proto.order._
 
 trait OrderManagerHelper {
 
@@ -32,6 +32,13 @@ trait OrderManagerHelper {
   // orderForMatch.availableAmountS与orderForMatch.availableFee共用同一组min(allowance, balance)
   // 优先供给fee,如果fee足够则补充amountS,如果fee不够
   def getOrderForMatchWithFee(state: OrderState, account: Account): OrderForMatch
+
+  //  // 比较订单当前撮合信息与最新撮合信息，并决定该订单在撮合引擎的curd操作类型
+  //  // 1.next.amountS >= prev.amountS, next.fee >= prev.fee update/new
+  //  // 2.next.amountS >= prev.amountS, next.fee < prev.fee update/rem
+  //  // 3.next.amountS < prev.amountS, next.fee >= prev.fee update/rem
+  //  // 4.next.amountS < prev.amountS, next.fee < prev.fee update/rem
+  //  def accessNotifyTypeWithOrderForMatch(prev: OrderForMatch, next: OrderForMatch): OrderForMatch
 
   // todo 应该根据marketCap计算订单状态,这里暂时替代下
   def isOrderFinished(availableAmount: BigInt): Boolean

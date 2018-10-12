@@ -18,12 +18,11 @@
 
 package org.loopring.orderbook.core
 
-import org.loopring.orderbook.proto.deployment.{ DepthManagerSettings, MarketConfig }
+import org.loopring.orderbook.proto.deployment.MarketConfig
 import org.loopring.orderbook.proto.depth.DepthUpdateEvent
-import org.loopring.orderbook.proto.order.{ OrderBeforeMatch, OrderForMatch, OrderState }
+import org.loopring.orderbook.proto.order.OrderForMatch
 import org.loopring.orderbook.lib.math.Rational
 import org.loopring.orderbook.lib.etypes._
-import org.loopring.orderbook.proto.account.Account
 
 package object actors {
 

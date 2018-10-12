@@ -17,13 +17,20 @@
 package org.loopring.orderbook.core.util
 
 import org.loopring.orderbook.proto.account.Account
-import org.loopring.orderbook.proto.order.{ OrderForMatch, OrderState }
+import org.loopring.orderbook.proto.order._
 import org.loopring.orderbook.lib.etypes._
 
 class OrderManagerHelpImpl()
   extends OrderManagerHelper {
 
+  def handleNewOrder(): OrderForMatch = null
+
+  def handleOrderFill(): OrderForMatch = null
+
+  def handleOrderCancel(): OrderForMatch = null
+
   def getOrderForMatchWithoutFee(state: OrderState, account: Account, feeAccount: Account): OrderForMatch = {
+    var matchType = OrderForMatchType.ORDER_UPDATE
     val orderAvailableAmountS = state.availableAmountS()
     val accountAvailableAmount = account.min
     val availableAmountS = if (accountAvailableAmount.compare(orderAvailableAmountS) > 0) {
@@ -44,10 +51,12 @@ class OrderManagerHelpImpl()
       rawOrder = state.rawOrder,
       feeAddress = state.getRawOrder.feeAddr.safe,
       availableAmountS = availableAmountS.toString,
-      availableFee = availableFee.toString())
+      availableFee = availableFee.toString(),
+      matchType = matchType)
   }
 
   def getOrderForMatchWithFee(state: OrderState, account: Account): OrderForMatch = {
+    var matchType = OrderForMatchType.ORDER_UPDATE
     val orderAvailableFee = state.availableFee()
     val accountAvailableFee = account.min
     val availableFee = if (accountAvailableFee.compare(orderAvailableFee) > 0) {
@@ -68,7 +77,8 @@ class OrderManagerHelpImpl()
       rawOrder = state.rawOrder,
       feeAddress = state.getRawOrder.feeAddr.safe,
       availableAmountS = availableAmountS.toString,
-      availableFee = availableFee.toString())
+      availableFee = availableFee.toString(),
+      matchType = matchType)
   }
 
   def isOrderFinished(availableAmount: BigInt): Boolean = {

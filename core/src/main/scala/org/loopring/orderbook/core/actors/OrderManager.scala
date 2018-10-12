@@ -80,20 +80,20 @@ class OrderManager(orderBookManager: ActorRef, accountManager: ActorRef)(
   // orderState已从链上获取成交量取消量
   // todo 从accountManager获取balance&allowance
   private def addNewOrder(order: OrderState, allowance: String, balance: String) = {
-    val orderBeforeMatch = OrderBeforeMatch(
-      dealtAmountS = order.dealtAmountS,
-      cancelAmountS = order.cancelAmountS,
-      totalAllowance = allowance,
-      totalBalance = balance,
-      availableAllowance = allowance,
-      availableBalance = balance)
-
-    if (ordermap.contains(order.getRawOrder.owner.safe)) {
-
-    } else {
-      var sortedMap = SortedMap.empty[Long, OrderBeforeMatch]
-      val orderBeforeMatch = OrderBeforeMatch()
-    }
+    //    val orderBeforeMatch = OrderBeforeMatch(
+    //      dealtAmountS = order.dealtAmountS,
+    //      cancelAmountS = order.cancelAmountS,
+    //      totalAllowance = allowance,
+    //      totalBalance = balance,
+    //      availableAllowance = allowance,
+    //      availableBalance = balance)
+    //
+    //    if (ordermap.contains(order.getRawOrder.owner.safe)) {
+    //
+    //    } else {
+    //      var sortedMap = SortedMap.empty[Long, OrderBeforeMatch]
+    //      val orderBeforeMatch = OrderBeforeMatch()
+    //    }
   }
 
   //  private def notify(ord: OrderBeforeMatch, event: AllowanceChangedEvent): OrderMatchNotifyEvent = {
