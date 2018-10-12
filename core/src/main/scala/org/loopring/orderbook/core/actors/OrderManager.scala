@@ -103,36 +103,37 @@ class OrderManager(
     }).toSeq
   }
 
-  def updateOrderMap(ord: OrderBeforeMatch, typ: OrderForMatchType): Unit = {
-    val state = ord.getState
-    val rawOrder = ord.getState.getRawOrder
-    val key = getKey(rawOrder.owner, rawOrder.tokenS)
+  def updateOrderMap(ord: OrderBeforeMatch, typ: OrderForMatchType) =
+    this.synchronized {
+      val state = ord.getState
+      val rawOrder = ord.getState.getRawOrder
+      val key = getKey(rawOrder.owner, rawOrder.tokenS)
 
-    typ match {
-      case OrderForMatchType.ORDER_NEW =>
-        var map = ordermap.getOrElse(key, SortedMap.empty[Long, OrderBeforeMatch])
-        map += state.createdAt -> ord
-        ordermap += key -> map
+      typ match {
+        case OrderForMatchType.ORDER_NEW =>
+          var map = this.ordermap.getOrElse(key, SortedMap.empty[Long, OrderBeforeMatch])
+          map += state.createdAt -> ord
+          this.ordermap += key -> map
 
-      case OrderForMatchType.ORDER_UPDATE =>
-        require(ordermap.contains(key))
-        var map = ordermap.getOrElse(key, SortedMap.empty[Long, OrderBeforeMatch])
-        require(map.contains(state.createdAt))
-        map += state.createdAt -> ord
-        ordermap += key -> map
+        case OrderForMatchType.ORDER_UPDATE =>
+          require(this.ordermap.contains(key))
+          var map = this.ordermap.getOrElse(key, SortedMap.empty[Long, OrderBeforeMatch])
+          require(map.contains(state.createdAt))
+          map += state.createdAt -> ord
+          this.ordermap += key -> map
 
-      case OrderForMatchType.ORDER_REM =>
-        require(ordermap.contains(key))
-        var map = ordermap.getOrElse(key, SortedMap.empty[Long, OrderBeforeMatch])
-        require(map.contains(state.createdAt))
-        map -= state.createdAt
-        if (map.size.equals(0)) {
-          ordermap -= key
-        } else {
-          ordermap += key -> map
-        }
+        case OrderForMatchType.ORDER_REM =>
+          require(this.ordermap.contains(key))
+          var map = this.ordermap.getOrElse(key, SortedMap.empty[Long, OrderBeforeMatch])
+          require(map.contains(state.createdAt))
+          map -= state.createdAt
+          if (map.size.equals(0)) {
+            this.ordermap -= key
+          } else {
+            this.ordermap += key -> map
+          }
+      }
     }
-  }
 
   // todo: how to sharding(不能光通过tokenS来分片, lrcFee&2.0后续其他的fee也要考虑)
   private def onThisActor()(op: => Any) = {
