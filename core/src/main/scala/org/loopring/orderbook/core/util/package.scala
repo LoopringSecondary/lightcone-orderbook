@@ -34,6 +34,11 @@ package object util {
 
     def dealtAndCancelAmountS: BigInt = src.dealtAmountS.asBigInt.+(src.cancelAmountS.asBigInt)
 
+    def dealtAndCancelAmountS(dealCancelAmount: BigInt): BigInt = {
+      src.dealtAndCancelAmountS.+(dealCancelAmount)
+    }
+
+    // 待成交amount
     def availableAmountS(): BigInt = {
       val rawOrder = src.getRawOrder
       val totalAmountS = rawOrder.amountS.asBigInt
@@ -48,6 +53,16 @@ package object util {
       }
     }
 
+    def availableAmountS(dealtCancelAmount: BigInt): BigInt = {
+      val available = src.availableAmountS()
+      if (available.compare(dealtCancelAmount) > 0) {
+        available.-(dealtCancelAmount)
+      } else {
+        BigInt(0)
+      }
+    }
+
+    // 待成交fee
     def availableFee(): BigInt = {
       val rawOrder = src.getRawOrder
       val rawFee = rawOrder.fee.asRational
@@ -66,5 +81,44 @@ package object util {
       ord.feeAddr.safe.equals(ord.feeAddr.safe)
     }
 
+    def tokenNotFee: Boolean = !src.tokenIsFee()
   }
+
+  implicit class RichOrderBeforeMatch(src: OrderBeforeMatch) {
+
+    def minTokenAccount: BigInt = {
+      src.tokenSBalance.asBigInt.min(src.tokenSAllowance.asBigInt)
+    }
+
+    def minFeeAccount: BigInt = {
+      src.feeBalance.asBigInt.min(src.feeAllowance.asBigInt)
+    }
+
+    def orderAvailableAmount: BigInt = {
+      src.getState.availableAmountS()
+    }
+
+    // fee允许为0
+    def feeAvailableAmount: BigInt = if (src.getState.tokenIsFee()) {
+      src.getState.availableFee().min(src.minFeeAccount)
+    } else {
+      src.minFeeAccount
+    }
+
+    def accountAvailableAmount: BigInt = if (src.getState.tokenIsFee()) {
+      val state = src.getState
+      val account = src.minFeeAccount
+      val available = src.feeAvailableAmount
+      val amounts = state.availableAmountS()
+
+      if (account.compare(available) > 0) {
+        amounts.min(account.-(available))
+      } else {
+        BigInt(0)
+      }
+    } else {
+      src.minTokenAccount
+    }
+  }
+
 }

@@ -55,21 +55,27 @@ class OrderManager(
   // todo save into ordermap
   def handleOrderNew(ord: OrderState, account: Account, feeAccount: Account): OrderForMatch = {
     val state = ord.copy(dealtAmountS = BigInt(0).toString, cancelAmountS = BigInt(0).toString())
-    val orderBeforeMatch = state.tokenIsFee() match {
-      case true => helper.getOrderBeforeMatchWithFee(state, feeAccount)
-      case false => helper.getOrderBeforeMatchWithoutFee(state, account, feeAccount)
-    }
+
+    val orderBeforeMatch = OrderBeforeMatch(
+      state = Option(state),
+      tokenSBalance = account.balance.toString,
+      tokenSAllowance = account.allowance.toString,
+      feeBalance = feeAccount.balance.toString,
+      feeAllowance = feeAccount.allowance.toString)
+
     helper.getOrderForMatch(orderBeforeMatch)
   }
 
   def handleOrderFill(ord: OrderBeforeMatch, dealtAmountS: BigInt): OrderForMatch = {
-    val orderBeforeMatch = helper.updateOrderBeforeMatchWithTrade(ord, dealtAmountS)
-    helper.getOrderForMatch(orderBeforeMatch)
+    val amount = ord.getState.dealtAmountS.asBigInt.+(dealtAmountS)
+    val state = ord.getState.copy(dealtAmountS = amount.toString)
+    helper.getOrderForMatch(ord.copy(state = Option(state)))
   }
 
   def handleOrderCancel(ord: OrderBeforeMatch, cancelAmountS: BigInt): OrderForMatch = {
-    val orderBeforeMatch = helper.updateOrderBeforeMatchWithTrade(ord, cancelAmountS)
-    helper.getOrderForMatch(orderBeforeMatch)
+    val amount = ord.getState.cancelAmountS.asBigInt.+(cancelAmountS)
+    val state = ord.getState.copy(dealtAmountS = amount.toString)
+    helper.getOrderForMatch(ord.copy(state = Option(state)))
   }
 
   def handleOrderCutoff(ord: OrderBeforeMatch) = OrderForMatch(

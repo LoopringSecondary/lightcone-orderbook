@@ -16,27 +16,15 @@
 
 package org.loopring.orderbook.core.util
 
-import org.loopring.orderbook.proto.account.Account
 import org.loopring.orderbook.proto.order._
 
 trait OrderManagerHelper {
 
-  // fee不是tokenS
-  def getOrderBeforeMatchWithoutFee(state: OrderState, account: Account, feeAccount: Account): OrderBeforeMatch
-
-  // fee即tokenS
-  // 优先供给fee,如果fee足够则补充amountS,如果fee不够
-  def getOrderBeforeMatchWithFee(state: OrderState, feeAccount: Account): OrderBeforeMatch
-
-  // 在账户余额不变情况下更新
-  def updateOrderBeforeMatchWithTrade(src: OrderBeforeMatch, dealtCancelAmount: BigInt): OrderBeforeMatch
-
-  // 在成交情况不变情况下更新
-  def updateOrderBeforeMatchWithAccount(src: OrderBeforeMatch, account: Account): OrderBeforeMatch
-
+  // 根据orderBeforeMatch获取orderForMatch
   def getOrderForMatch(ord: OrderBeforeMatch): OrderForMatch
 
-  def fundInsufficient(src: OrderBeforeMatch): Boolean
+  // 判断订单余额/授权是否充足
+  def fundInsufficient(accountAvailableAmount: BigInt, orderAvailableAmount: BigInt): Boolean
 
   // todo 应该根据marketCap计算订单状态,这里暂时替代下
   def dustAmountS(availableAmount: BigInt): Boolean

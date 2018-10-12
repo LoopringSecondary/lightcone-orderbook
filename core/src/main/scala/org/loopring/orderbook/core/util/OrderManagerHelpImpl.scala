@@ -16,65 +16,39 @@
 
 package org.loopring.orderbook.core.util
 
-import org.loopring.orderbook.proto.account.Account
 import org.loopring.orderbook.proto.order._
 import org.loopring.orderbook.lib.etypes._
 
 class OrderManagerHelpImpl()
   extends OrderManagerHelper {
 
-  def getOrderBeforeMatchWithoutFee(state: OrderState, account: Account, feeAccount: Account) = OrderBeforeMatch(
-    state = Option(state),
-    orderAvailableAmount = state.availableAmountS().toString,
-    accountAvailableAmount = account.min.toString,
-    feeAvailableAmount = feeAccount.min.toString)
-
-  def getOrderBeforeMatchWithFee(state: OrderState, feeAccount: Account): OrderBeforeMatch = {
-    val availableFee = state.availableFee().min(feeAccount.min)
-
-    val availableAmountS = if (availableFee.compare(state.availableAmountS()) > 0) {
-      availableFee.-(state.availableAmountS())
-    } else {
-      BigInt(0)
-    }
-
-    OrderBeforeMatch(
-      state = Option(state),
-      orderAvailableAmount = state.availableAmountS().toString,
-      accountAvailableAmount = availableAmountS.toString(),
-      feeAvailableAmount = availableFee.toString())
-  }
-
-  def updateOrderBeforeMatchWithTrade(src: OrderBeforeMatch, dealtCancelAmount: BigInt): OrderBeforeMatch = {
-
-  }
-
-  def updateOrderBeforeMatchWithAccount(src: OrderBeforeMatch, account: Account): OrderBeforeMatch = {
-
-  }
-
   def getOrderForMatch(ord: OrderBeforeMatch): OrderForMatch = {
-    val orderType = if (ord.getState.dealtAndCancelAmountS.compare(BigInt(0)) == 0) {
+    val state = ord.getState
+    val orderType = if (state.dealtAndCancelAmountS.compare(BigInt(0)) == 0) {
       OrderForMatchType.ORDER_NEW
-    } else if (fundInsufficient(ord)) {
+    } else if (fundInsufficient(ord.accountAvailableAmount, ord.orderAvailableAmount)) {
       OrderForMatchType.ORDER_REM
     } else {
       OrderForMatchType.ORDER_UPDATE
     }
 
-    val availableAmountS = ord.orderAvailableAmount.asBigInt.min(ord.accountAvailableAmount.asBigInt)
+    val availableAmountS = ord.orderAvailableAmount.min(ord.accountAvailableAmount)
 
     OrderForMatch(
-      rawOrder = ord.getState.rawOrder,
-      feeAddress = ord.getState.getRawOrder.feeAddr.safe,
+      rawOrder = state.rawOrder,
+      feeAddress = state.getRawOrder.feeAddr.safe,
       availableAmountS = availableAmountS.toString,
-      availableFee = ord.feeAvailableAmount,
+      availableFee = ord.feeAvailableAmount.toString,
       matchType = orderType)
   }
 
-  def fundInsufficient(src: OrderBeforeMatch): Boolean = {
-    if (src.accountAvailableAmount.asBigInt.compare(src.orderAvailableAmount.asBigInt) > 0) {
-      dustAmountS(src.orderAvailableAmount.asBigInt)
+  // allowance/balance不足
+  // @param accountAvailableAmount: BigInt 可用min(余额/授权)
+  // @param orderAvailableAmount: BigInt 订单未成交量
+  // @return boolean, true->不足, false->充足
+  def fundInsufficient(accountAvailableAmount: BigInt, orderAvailableAmount: BigInt): Boolean = {
+    if (accountAvailableAmount.compare(orderAvailableAmount) > 0) {
+      dustAmountS(orderAvailableAmount)
     } else {
       true
     }
