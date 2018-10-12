@@ -85,8 +85,21 @@ class OrderManager(
     availableFee = BigInt(0).toString(),
     matchType = OrderForMatchType.ORDER_REM)
 
-  // todo
-  def handleAccountUpdate(ordmap: SortedMap[Long, OrderBeforeMatch]): Seq[OrderForMatch] = Seq()
+  def handleAccountUpdate(ordmap: SortedMap[Long, OrderBeforeMatch], amount: BigInt, isBalance: Boolean): Seq[OrderForMatch] = {
+    ordmap.map(x => {
+      val state = x._2.getState
+      val orderBeforeMatch = if (isBalance && state.tokenIsFee()) {
+        x._2.copy(tokenSBalance = amount.toString, feeBalance = amount.toString)
+      } else if (isBalance && state.tokenNotFee) {
+        x._2.copy(tokenSBalance = amount.toString)
+      } else if (!isBalance && state.tokenIsFee()) {
+        x._2.copy(tokenSAllowance = amount.toString, feeAllowance = amount.toString)
+      } else {
+        x._2.copy(tokenSAllowance = amount.toString)
+      }
+      helper.getOrderForMatch(orderBeforeMatch)
+    }).toSeq
+  }
 
   // todo: how to sharding(不能光通过tokenS来分片, lrcFee&2.0后续其他的fee也要考虑)
   private def onThisActor()(op: => Any) = {
