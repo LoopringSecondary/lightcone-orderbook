@@ -45,7 +45,7 @@ class OrderManager(
 
   var market = ""
 
-  // 对同一个用户地址的订单进行聚合，
+  // todo 对同一个用户地址的订单进行聚合，订单频率是否需要控制，create_time最小单位是ms/s?
   // hashmap[string, sortMap[create_time, orderBeforeMatch]]
   var ordermap = mutable.HashMap.empty[String, SortedMap[Long, OrderBeforeMatch]]
   override def receive: Receive = {
@@ -63,7 +63,9 @@ class OrderManager(
       feeBalance = feeAccount.balance.toString,
       feeAllowance = feeAccount.allowance.toString)
 
-    helper.getOrderForMatch(orderBeforeMatch)
+    val orderForMatch = helper.getOrderForMatch(orderBeforeMatch)
+    updateOrderMap(orderBeforeMatch, orderForMatch.matchType)
+    orderForMatch
   }
 
   def handleOrderFill(ord: OrderBeforeMatch, dealtAmountS: BigInt): OrderForMatch = {
@@ -101,6 +103,37 @@ class OrderManager(
     }).toSeq
   }
 
+  def updateOrderMap(ord: OrderBeforeMatch, typ: OrderForMatchType): Unit = {
+    val state = ord.getState
+    val rawOrder = ord.getState.getRawOrder
+    val key = getKey(rawOrder.owner, rawOrder.tokenS)
+
+    typ match {
+      case OrderForMatchType.ORDER_NEW =>
+        var map = ordermap.getOrElse(key, SortedMap.empty[Long, OrderBeforeMatch])
+        map += state.createdAt -> ord
+        ordermap += key -> map
+
+      case OrderForMatchType.ORDER_UPDATE =>
+        require(ordermap.contains(key))
+        var map = ordermap.getOrElse(key, SortedMap.empty[Long, OrderBeforeMatch])
+        require(map.contains(state.createdAt))
+        map += state.createdAt -> ord
+        ordermap += key -> map
+
+      case OrderForMatchType.ORDER_REM =>
+        require(ordermap.contains(key))
+        var map = ordermap.getOrElse(key, SortedMap.empty[Long, OrderBeforeMatch])
+        require(map.contains(state.createdAt))
+        map -= state.createdAt
+        if (map.size.equals(0)) {
+          ordermap -= key
+        } else {
+          ordermap += key -> map
+        }
+    }
+  }
+
   // todo: how to sharding(不能光通过tokenS来分片, lrcFee&2.0后续其他的fee也要考虑)
   private def onThisActor()(op: => Any) = {
     //    if (token.toLowerCase.equals(market)) {
@@ -109,6 +142,6 @@ class OrderManager(
     val result = op
   }
 
-  private def key(owner: String, token: String) = owner.safe + "-" + token.safe
+  private def getKey(owner: String, token: String) = owner.safe + "-" + token.safe
 
 }
