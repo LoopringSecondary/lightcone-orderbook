@@ -28,7 +28,7 @@ import org.loopring.orderbook.proto.deployment.OrderAmountFacilitatorSettings
 import org.loopring.orderbook.proto.order._
 
 import scala.collection.{ SortedMap, mutable }
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ ExecutionContext, Future }
 
 // 1.所有非终态订单存储到内存
 // 2.接收balanceManager的balanceUpdate,allowanceUpdate事件并更新订单可用余额
@@ -50,23 +50,39 @@ class OrderManager(
   var ordermap = mutable.HashMap.empty[String, SortedMap[Long, OrderBeforeMatch]]
   override def receive: Receive = {
     case s: OrderAmountFacilitatorSettings => market = s.tokenS.toLowerCase
+
+    case e: GatewayOrderEvent =>
+      for {
+        ord <- Future.successful(e.getState.getRawOrder)
+        res <- accountManager ? GetTokenAndFeeAccountReq(ord.owner, ord.tokenS, ord.feeAddr)
+        orderBeforeMatch = res match {
+          case r: GetTokenAndFeeAccountRes => handleOrderNew(e.getState, r.token.get, r.fee.get)
+          case _ => throw new Exception("get user account failed")
+        }
+        orderForMatch = helper.getOrderForMatch(orderBeforeMatch)
+        _ = updateOrderMap(orderBeforeMatch, orderForMatch.matchType)
+      } yield orderBookManager ! orderForMatch
+
+    case e: OrderUpdateEvent => onThisActor() {
+
+    }
+
+    case e: BalanceChangedEvent => onThisActor() {
+
+    }
+
+    case e: AllowanceChangedEvent => onThisActor() {
+
+    }
   }
 
   // todo save into ordermap
-  def handleOrderNew(ord: OrderState, account: Account, feeAccount: Account): OrderForMatch = {
-    val state = ord.copy(dealtAmountS = BigInt(0).toString, cancelAmountS = BigInt(0).toString())
-
-    val orderBeforeMatch = OrderBeforeMatch(
-      state = Option(state),
-      tokenSBalance = account.balance.toString,
-      tokenSAllowance = account.allowance.toString,
-      feeBalance = feeAccount.balance.toString,
-      feeAllowance = feeAccount.allowance.toString)
-
-    val orderForMatch = helper.getOrderForMatch(orderBeforeMatch)
-    updateOrderMap(orderBeforeMatch, orderForMatch.matchType)
-    orderForMatch
-  }
+  def handleOrderNew(ord: OrderState, account: Account, feeAccount: Account) = OrderBeforeMatch(
+    state = Option(ord.copy(dealtAmountS = BigInt(0).toString, cancelAmountS = BigInt(0).toString())),
+    tokenSBalance = account.balance.toString,
+    tokenSAllowance = account.allowance.toString,
+    feeBalance = feeAccount.balance.toString,
+    feeAllowance = feeAccount.allowance.toString)
 
   def handleOrderFill(ord: OrderBeforeMatch, dealtAmountS: BigInt): OrderForMatch = {
     val amount = ord.getState.dealtAmountS.asBigInt.+(dealtAmountS)
@@ -103,7 +119,7 @@ class OrderManager(
     }).toSeq
   }
 
-  def updateOrderMap(ord: OrderBeforeMatch, typ: OrderForMatchType) =
+  def updateOrderMap(ord: OrderBeforeMatch, typ: OrderForMatchType): Unit =
     this.synchronized {
       val state = ord.getState
       val rawOrder = ord.getState.getRawOrder

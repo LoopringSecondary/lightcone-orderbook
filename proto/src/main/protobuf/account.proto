@@ -31,3 +31,14 @@ message GetAllowanceAndBalanceReq {
 message GetAllowanceAndBalanceRes {
     Account account = 1;
 }
+
+message GetTokenAndFeeAccountReq {
+    string owner = 1;
+    string token_addr = 2;
+    string fee_addr = 3;
+}
+
+message GetTokenAndFeeAccountRes {
+    Account token = 1;
+    Account fee = 2;
+}

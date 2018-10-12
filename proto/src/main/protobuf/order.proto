@@ -60,6 +60,10 @@ message OrderState {
 // req & res onchain
 ///////////////////////////////////
 
+message GatewayOrderEvent {
+    OrderState state = 1;
+}
+
 message OrderUpdateEvent {
     string order_hash = 1;
     string owner = 2;
@@ -95,9 +99,6 @@ message OrderBeforeMatch {
     string token_s_allowance = 3;
     string fee_balance = 4;
     string fee_allowance = 5;
-//    string order_available_amount = 6;
-//    string account_available_amount = 7;
-//    string fee_available_amount = 8;
 }
 
 ///////////////////////////////////
