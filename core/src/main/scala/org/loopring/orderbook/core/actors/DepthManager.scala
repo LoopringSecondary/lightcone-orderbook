@@ -16,19 +16,18 @@
 
 */
 
-package org.loopring.orderbook.core.database.actors
+package org.loopring.orderbook.core.actors
 
 import akka.actor._
 import akka.pattern.ask
 import akka.util.Timeout
-import org.loopring.orderbook.proto.deployment.{DepthManagerSettings, MarketConfig}
 import org.loopring.orderbook.lib.etypes._
 import org.loopring.orderbook.lib.math._
+import org.loopring.orderbook.proto.deployment.{DepthManagerSettings, MarketConfig}
 import org.loopring.orderbook.proto.depth._
 
 import scala.collection.SortedMap
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 // 依赖orderbook
 // 初始化: 从orderBook获取priceIndex

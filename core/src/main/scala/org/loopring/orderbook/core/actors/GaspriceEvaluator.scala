@@ -16,10 +16,18 @@
 
 */
 
-package org.loopring.orderbook.core.database.actors
+package org.loopring.orderbook.core.actors
 
 import akka.actor.Actor
+import org.loopring.orderbook.proto.gas._
 
-class OrderGateway extends Actor {
-  override def receive: Receive = ???
+class GaspriceEvaluator extends Actor {
+
+  var gasPrice = BigInt(0)
+
+  override def receive: Receive = {
+    case req: GasReq => GasRes().withValue(gasPrice.toString)
+    case set: SetGas => gasPrice = BigInt.apply(set.value)
+  }
+
 }

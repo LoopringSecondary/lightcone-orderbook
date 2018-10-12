@@ -20,7 +20,7 @@ import org.loopring.orderbook.core.database.base._
 import org.loopring.orderbook.proto.order._
 import slick.jdbc.MySQLProfile.api._
 
-class Orders(tag: Tag) extends BaseTable[Order](tag, "ORDERS") {
+class Orders(tag: Tag) extends BaseTable[OrderState](tag, "ORDERS") {
   def tokenS = column[String]("token_s", O.SqlType("VARCHAR(64)"))
 
   def tokenB = column[String]("token_b", O.SqlType("VARCHAR(64)"))
@@ -29,7 +29,9 @@ class Orders(tag: Tag) extends BaseTable[Order](tag, "ORDERS") {
 
   def amountB = column[String]("amount_b", O.SqlType("VARCHAR(64)"))
 
-  def lrcFee = column[String]("lrc_fee", O.SqlType("VARCHAR(64)"))
+  def fee = column[String]("fee", O.SqlType("VARCHAR(64)"))
+
+  def feeAddress = column[String]("fee_addr", O.SqlType("VARCHAR(64)"))
 
   def buyNoMoreThanAmountB = column[Boolean]("buy_no_more_than_amount_b")
 
@@ -53,6 +55,10 @@ class Orders(tag: Tag) extends BaseTable[Order](tag, "ORDERS") {
 
   def dealtAmountB = column[String]("dealt_amount_b", O.SqlType("VARCHAR(64)"))
 
+  def cancelAmountS = column[String]("cancel_amount_s", O.SqlType("VARCHAR(64)"))
+
+  def cancelAmountB = column[String]("cancel_amount_b", O.SqlType("VARCHAR(64)"))
+
   def delayCause = column[String]("delay_cause", O.SqlType("VARCHAR(64)"))
 
   def status = column[String]("status", O.SqlType("VARCHAR(64)"))
@@ -63,16 +69,21 @@ class Orders(tag: Tag) extends BaseTable[Order](tag, "ORDERS") {
 
   def price = column[Double]("price", O.SqlType("DECIMAL(28,16)"))
 
+  def updatedBlock = column[Long]("updated_block", O.SqlType("BIGINT"))
+
   def * = (
     id,
     rawOrderProjection,
     dealtAmountS,
     dealtAmountB,
+    cancelAmountS,
+    cancelAmountB,
     delayCause,
     status,
     market,
     side,
     price,
+    updatedBlock,
     createdAt,
     updatedAt) <> (extendTupled, unwrapOption)
 
@@ -81,7 +92,8 @@ class Orders(tag: Tag) extends BaseTable[Order](tag, "ORDERS") {
     tokenB,
     amountS,
     amountB,
-    lrcFee,
+    fee,
+    feeAddress,
     buyNoMoreThanAmountB,
     marginSplitPercentage,
     owner,
@@ -94,34 +106,40 @@ class Orders(tag: Tag) extends BaseTable[Order](tag, "ORDERS") {
       (RawOrder.apply _).tupled,
       RawOrder.unapply)
 
-  private def extendTupled = (i: Tuple11[Long, RawOrder, String, String, String, String, String, String, Double, Long, Long]) ⇒
-    Order.apply(
+  private def extendTupled = (i: Tuple14[Long, RawOrder, String, String, String, String, String, String, String, String, Double, Long, Long, Long]) ⇒
+    OrderState.apply(
       i._1,
       Some(i._2),
       i._3,
       i._4,
       i._5,
-      OrderStatus.fromName(i._6).getOrElse(OrderStatus.ORDER_STATUS_UNKNOWN),
+      i._6,
       i._7,
-      i._8,
+      OrderStatus.fromName(i._8).getOrElse(OrderStatus.ORDER_STATUS_UNKNOWN),
       i._9,
       i._10,
-      i._11)
+      i._11,
+      i._12,
+      i._13,
+      i._14)
 
-  private def unwrapOption(order: Order) = {
-    val unapplyOrder = Order.unapply(order).get
+  private def unwrapOption(order: OrderState) = {
+    val unapplyOrder = OrderState.unapply(order).get
     Some((
       unapplyOrder._1,
       unapplyOrder._2.get,
       unapplyOrder._3,
       unapplyOrder._4,
       unapplyOrder._5,
-      unapplyOrder._6.name,
+      unapplyOrder._6,
       unapplyOrder._7,
-      unapplyOrder._8,
+      unapplyOrder._8.name,
       unapplyOrder._9,
       unapplyOrder._10,
-      unapplyOrder._11))
+      unapplyOrder._11,
+      unapplyOrder._12,
+      unapplyOrder._13,
+      unapplyOrder._14))
   }
 
   def idx = index("idx_order_hash", orderHash, unique = true)

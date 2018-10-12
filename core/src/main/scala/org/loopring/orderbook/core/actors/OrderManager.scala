@@ -16,17 +16,17 @@
 
 */
 
-package org.loopring.orderbook.core.database.actors
+package org.loopring.orderbook.core.actors
 
 import akka.actor._
 import akka.pattern.ask
 import akka.util.Timeout
 import org.loopring.orderbook.lib.etypes._
-import org.loopring.orderbook.proto.order._
-import org.loopring.orderbook.proto.deployment.OrderAmountFacilitatorSettings
 import org.loopring.orderbook.proto.account._
+import org.loopring.orderbook.proto.deployment.OrderAmountFacilitatorSettings
+import org.loopring.orderbook.proto.order._
 
-import scala.collection.{SortedMap, mutable}
+import scala.collection.{ SortedMap, mutable }
 import scala.concurrent.ExecutionContext
 
 // 1.所有非终态订单存储到内存
@@ -57,23 +57,24 @@ class OrderManager(orderBookManager: ActorRef, accountManager: ActorRef)(
 
     case u: OrderUpdateEvent =>
 
-    case e: AllowanceChangedEvent =>
-      onThisActor() {
-        ordermap.get(e.token.safe) match {
-          case Some(ord) =>
-            orderBookManager ! notify(ord, e)
-          case _ =>
-        }
-      }
+    //    case e: AllowanceChangedEvent =>
+    //      onThisActor() {
+    //        ordermap.get(e.token.safe) match {
+    //          case Some(ord) =>
+    //            orderBookManager ! notify(ord, e)
+    //          case _ =>
+    //        }
+    //      }
+    //
+    //    case e: BalanceChangedEvent =>
+    //      onThisActor() {
+    //        ordermap.get(e.token.safe) match {
+    //          case Some(ord) =>
+    //            orderBookManager ! notify(ord, e)
+    //          case _ =>
+    //        }
+    //      }
 
-    case e: BalanceChangedEvent =>
-      onThisActor() {
-        ordermap.get(e.token.safe) match {
-          case Some(ord) =>
-            orderBookManager ! notify(ord, e)
-          case _ =>
-        }
-      }
   }
 
   // orderState已从链上获取成交量取消量
@@ -85,8 +86,7 @@ class OrderManager(orderBookManager: ActorRef, accountManager: ActorRef)(
       totalAllowance = allowance,
       totalBalance = balance,
       availableAllowance = allowance,
-      availableBalance = balance
-    )
+      availableBalance = balance)
 
     if (ordermap.contains(order.getRawOrder.owner.safe)) {
 
@@ -96,58 +96,21 @@ class OrderManager(orderBookManager: ActorRef, accountManager: ActorRef)(
     }
   }
 
-  private def getOrderForMatchWithoutFee(state: OrderState, account: Account, feeAccount: Account): OrderForMatch = {
-    val orderAvailableAmountS = state.availableAmountS()
-    val accountAvailableAmount = account.min
-    val availableAmountS = if (accountAvailableAmount.compare(orderAvailableAmountS) > 0) {
-      orderAvailableAmountS
-    } else {
-      accountAvailableAmount
-    }
-
-    val orderAvailableFee = state.availableFee()
-    val accountAvailableFee = feeAccount.min
-    val availableFee = if (accountAvailableFee.compare(orderAvailableFee) > 0) {
-      orderAvailableFee
-    } else {
-      accountAvailableFee
-    }
-
-    OrderForMatch(
-      rawOrder = state.rawOrder,
-      feeAddress = state.getRawOrder.feeAddr.safe,
-      availableAmountS = availableAmountS.toString,
-      availableFee = availableFee.toString()
-    )
-  }
-
-  private def getOrderForMatchWithFee(state: OrderState, account: Account): OrderForMatch = {
-
-  }
-
-  private def notify(ord: OrderBeforeMatch, event: AllowanceChangedEvent): OrderMatchNotifyEvent = {
-    val available = ord.getMatch.availableAmountS.asBigInt
-    val allowance = ord.allowance.asBigInt
-    val mord = ord.getMatch.copy(availableAmountS = event.currentAmount, )
-
-    if (allowance.compare(available) < 0) {
-      OrderMatchNotifyEvent().withMatch(ord.getMatch)
-    } else {
-      OrderMatchNotifyEvent()
-    }
-  }
-
-  private def notify(ord: OrderBeforeMatch, event: BalanceChangedEvent): OrderMatchNotifyEvent = {
-
-  }
-
-  // 优先保证lrcfee
-  // 1.订单处于完成状态则type为rem
-  // 2.订单dealt&cancel都为0则type为new
-  // 3.订单fill时为sub
-  // 4.balance增加时，如果fee不够则补全OrderForMatch.fee, 剩余的如果超过当前available量则补全
-  private def calculate(orderBeforeMatch: OrderBeforeMatch): OrderMatchNotifyEvent = {
-  }
+  //  private def notify(ord: OrderBeforeMatch, event: AllowanceChangedEvent): OrderMatchNotifyEvent = {
+  //    val available = ord.getMatch.availableAmountS.asBigInt
+  //    val allowance = ord.allowance.asBigInt
+  //    val mord = ord.getMatch.copy(availableAmountS = event.currentAmount, )
+  //
+  //    if (allowance.compare(available) < 0) {
+  //      OrderMatchNotifyEvent().withMatch(ord.getMatch)
+  //    } else {
+  //      OrderMatchNotifyEvent()
+  //    }
+  //  }
+  //
+  //  private def notify(ord: OrderBeforeMatch, event: BalanceChangedEvent): OrderMatchNotifyEvent = {
+  //
+  //  }
 
   // todo: how to sharding(不能光通过tokenS来分片, lrcFee&2.0后续其他的fee也要考虑)
   private def onThisActor()(op: => Any) = {
@@ -157,8 +120,4 @@ class OrderManager(orderBookManager: ActorRef, accountManager: ActorRef)(
     val result = op
   }
 
-  // todo 应该根据marketCap计算订单状态,这里暂时替代下
-  private def isOrderFinished(availableAmount: BigInt): Boolean = {
-    availableAmount.compare(BigInt(0)) <= 0
-  }
 }

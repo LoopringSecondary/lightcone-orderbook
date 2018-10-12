@@ -49,6 +49,8 @@ package object etypes {
     def asProtoByteString(): ByteString = {
       ByteString.copyFrom(hex.getBytes())
     }
+
+    def safe: String = hex.toLowerCase
   }
 
   implicit class RichBigint(i: BigInt) {
@@ -59,5 +61,4 @@ package object etypes {
 
     def toHex: String = Numeric.toHexString(i.toByteArray)
   }
-
 }

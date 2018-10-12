@@ -32,40 +32,40 @@ case class QueryCondition(
   orderHashes: Seq[String] = Seq(),
   side: Option[String] = None)
 
-trait OrdersDal extends BaseDalImpl[Orders, Order] {
-  def getOrder(orderHash: String): Future[Option[Order]]
+trait OrdersDal extends BaseDalImpl[Orders, OrderState] {
+  def getOrder(orderHash: String): Future[Option[OrderState]]
 
-  def getOrders(condition: QueryCondition, skip: Int, take: Int): Future[Seq[Order]]
+  def getOrders(condition: QueryCondition, skip: Int, take: Int): Future[Seq[OrderState]]
 
   def count(condition: QueryCondition): Future[Int]
 
-  def getOrders(condition: QueryCondition): Future[Seq[Order]]
+  def getOrders(condition: QueryCondition): Future[Seq[OrderState]]
 
-  def getOrdersWithCount(condition: QueryCondition, skip: Int, take: Int): (Future[Seq[Order]], Future[Int])
+  def getOrdersWithCount(condition: QueryCondition, skip: Int, take: Int): (Future[Seq[OrderState]], Future[Int])
 
-  def saveOrder(order: Order): Future[Int]
+  def saveOrder(order: OrderState): Future[Int]
 
-  def unwrapCondition(condition: QueryCondition): Query[Orders, Order, Seq]
+  def unwrapCondition(condition: QueryCondition): Query[Orders, OrderState, Seq]
 }
 
 class OrdersDalImpl(val module: OrderDatabase) extends OrdersDal {
   val query = ordersQ
 
-  override def update(row: Order): Future[Int] = {
+  override def update(row: OrderState): Future[Int] = {
     db.run(query.filter(_.id === row.id).update(row))
   }
 
-  override def update(rows: Seq[Order]): Future[Unit] = {
+  override def update(rows: Seq[OrderState]): Future[Unit] = {
     db.run(DBIO.seq(rows.map(r ⇒ query.filter(_.id === r.id).update(r)): _*))
   }
 
-  def saveOrder(order: Order): Future[Int] = module.db.run(query += order)
+  def saveOrder(order: OrderState): Future[Int] = module.db.run(query += order)
 
-  def getOrder(orderHash: String): Future[Option[Order]] = {
+  def getOrder(orderHash: String): Future[Option[OrderState]] = {
     findByFilter(_.orderHash === orderHash).map(_.headOption)
   }
 
-  def getOrders(condition: QueryCondition, skip: Int, take: Int): Future[Seq[Order]] = {
+  def getOrders(condition: QueryCondition, skip: Int, take: Int): Future[Seq[OrderState]] = {
 
     db.run(unwrapCondition(condition)
       .drop(skip)
@@ -76,12 +76,12 @@ class OrdersDalImpl(val module: OrderDatabase) extends OrdersDal {
   def count(condition: QueryCondition): Future[Int] = db.run(unwrapCondition(condition).length.result)
 
   // 用来查询所有相关订单， 没有分页参数，主要用来做软取消，慎用
-  def getOrders(condition: QueryCondition): Future[Seq[Order]] = {
+  def getOrders(condition: QueryCondition): Future[Seq[OrderState]] = {
     db.run(unwrapCondition(condition)
       .result)
   }
 
-  def getOrdersWithCount(condition: QueryCondition, skip: Int, take: Int): (Future[Seq[Order]], Future[Int]) = {
+  def getOrdersWithCount(condition: QueryCondition, skip: Int, take: Int): (Future[Seq[OrderState]], Future[Int]) = {
 
     val action = unwrapCondition(condition)
       .drop(skip)
@@ -90,7 +90,7 @@ class OrdersDalImpl(val module: OrderDatabase) extends OrdersDal {
     (db.run(action.drop(skip).take(take).result), db.run(action.length.result))
   }
 
-  override def unwrapCondition(condition: QueryCondition): Query[Orders, Order, Seq] = {
+  override def unwrapCondition(condition: QueryCondition): Query[Orders, OrderState, Seq] = {
 
     query
       .filter { o ⇒

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.loopring.orderbook.core.database.actors
+package org.loopring.orderbook.core.actors
 
 import akka.actor._
 import org.loopring.orderbook.proto.order.StartNewRound

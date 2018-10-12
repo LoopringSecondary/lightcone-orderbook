@@ -16,7 +16,7 @@
 
 */
 
-package org.loopring.orderbook.core.database.actors
+package org.loopring.orderbook.core.actors
 
 import akka.actor.{ Actor, ActorRef }
 import org.loopring.orderbook.lib.math.Rational

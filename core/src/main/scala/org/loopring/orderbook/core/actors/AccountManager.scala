@@ -16,10 +16,11 @@
 
 */
 
-package org.loopring.orderbook.core.database.actors
+package org.loopring.orderbook.core.actors
 
 import akka.actor.Actor
 import org.loopring.orderbook.proto.account._
+import org.loopring.orderbook.lib.etypes._
 
 import scala.collection.mutable
 
