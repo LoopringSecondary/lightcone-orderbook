@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.loopring.orderbook.core.database
+package org.loopring.orderbook.core
 
 import org.loopring.orderbook.lib.math.Rational
 import org.loopring.orderbook.proto.order.{ OrderForMatch, RawOrder }

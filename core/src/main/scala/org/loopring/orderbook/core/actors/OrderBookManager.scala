@@ -22,7 +22,6 @@ import akka.actor.{ Actor, ActorRef }
 import org.loopring.orderbook.lib.math.Rational
 import org.loopring.orderbook.proto.order._
 import org.loopring.orderbook.lib.etypes._
-import org.loopring.orderbook.core.database.richproto._
 import akka.pattern._
 import akka.util.Timeout
 
