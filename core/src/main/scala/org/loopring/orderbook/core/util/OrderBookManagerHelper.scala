@@ -16,25 +16,8 @@
 
 */
 
-package org.loopring.orderbook.core.actors
+package org.loopring.orderbook.core.util
 
-import akka.actor.Actor
-import akka.util.Timeout
-import org.loopring.orderbook.core.util.{DustEvaluator, OrderBookManagerHelperImpl}
+trait OrderBookManagerHelper {
 
-import scala.concurrent.ExecutionContext
-
-class OrderBookManager(
-  tokenA: String,
-  tokenB: String)(
-  implicit
-  timeout: Timeout,
-  ec: ExecutionContext,
-  dustEvaluator: DustEvaluator) extends Actor {
-
-  val manager = new OrderBookManagerHelperImpl(tokenA, tokenB)
-
-  override def receive: Receive = {
-    case _ ⇒
-  }
 }

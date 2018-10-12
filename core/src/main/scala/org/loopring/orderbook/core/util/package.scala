@@ -27,6 +27,7 @@ package object util {
 
   implicit class RichAccount(src: Account) {
     def min: BigInt = src.allowance.asBigInt.min(src.balance.asBigInt)
+
     def max: BigInt = src.allowance.asBigInt.max(src.balance.asBigInt)
   }
 

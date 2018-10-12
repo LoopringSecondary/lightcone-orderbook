@@ -66,6 +66,10 @@ class Rational(numerator: BigInt, denominator: BigInt)
 
   def signum: Int = this.num.signum * this.denom.signum
 
+  def abs(): Rational = new Rational(
+    numerator = this.num.abs,
+    denominator = this.denom.abs)
+
   override def underlying(): AnyRef = this
 
   override def compare(that: Rational): Int = this.num * that.denom compareTo this.denom * that.num
@@ -92,6 +96,10 @@ class Rational(numerator: BigInt, denominator: BigInt)
     this.num / this.denom
   }
 
+  def negValue(): Rational = {
+    this.abs() * Rational(-1)
+  }
+
   override def toString: String = s"${this.num.toString()}/${this.denom.toString()}"
 
   def floatString(precisionOpt: Option[Int] = None): String = {
@@ -111,6 +119,8 @@ class Rational(numerator: BigInt, denominator: BigInt)
 }
 
 object Rational {
+
+  val MaxIntValue = Rational(Integer.MAX_VALUE)
 
   val MaxDoubleValue = BigDecimal(Double.MaxValue)
 
