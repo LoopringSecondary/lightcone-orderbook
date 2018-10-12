@@ -19,42 +19,30 @@
 package org.loopring.orderbook.core
 
 import org.loopring.orderbook.lib.math.Rational
-import org.loopring.orderbook.proto.order.OrderState
+import org.loopring.orderbook.proto.order.{ OrderBeforeMatch, OrderForMatch, OrderState }
 import org.loopring.orderbook.lib.etypes._
 import org.loopring.orderbook.proto.account.Account
 
 package object util {
 
   implicit class RichAccount(src: Account) {
-
-    def min: BigInt = {
-      if (src.allowance.asBigInt.compare(src.balance.asBigInt) < 0) {
-        src.allowance.asBigInt
-      } else {
-        src.balance.asBigInt
-      }
-    }
-
-    def max: BigInt = {
-      if (src.allowance.asBigInt.compare(src.balance.asBigInt) < 0) {
-        src.balance.asBigInt
-      } else {
-        src.allowance.asBigInt
-      }
-    }
+    def min: BigInt = src.allowance.asBigInt.min(src.balance.asBigInt)
+    def max: BigInt = src.allowance.asBigInt.max(src.balance.asBigInt)
   }
 
   implicit class RichOrderState(src: OrderState) {
 
+    def dealtAndCancelAmountS: BigInt = src.dealtAmountS.asBigInt.+(src.cancelAmountS.asBigInt)
+
     def availableAmountS(): BigInt = {
       val rawOrder = src.getRawOrder
       val totalAmountS = rawOrder.amountS.asBigInt
-      val dealtAmountS = src.dealtAmountS.asBigInt.bigInteger
-      val cancelAmountS = src.cancelAmountS.asBigInt.bigInteger
-      val dealtAndCancelAmount = dealtAmountS.add(cancelAmountS)
+      val dealtAmountS = src.dealtAmountS.asBigInt
+      val cancelAmountS = src.cancelAmountS.asBigInt
+      val dealtAndCancelAmount = dealtAmountS.+(cancelAmountS)
 
       if (totalAmountS.compare(dealtAndCancelAmount) > 0) {
-        BigInt(totalAmountS.bigInteger.subtract(dealtAndCancelAmount))
+        totalAmountS.-(dealtAndCancelAmount)
       } else {
         BigInt(0)
       }

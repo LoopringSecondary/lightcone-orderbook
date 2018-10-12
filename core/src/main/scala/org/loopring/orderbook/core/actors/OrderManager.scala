@@ -21,6 +21,7 @@ package org.loopring.orderbook.core.actors
 import akka.actor._
 import akka.pattern.ask
 import akka.util.Timeout
+import org.loopring.orderbook.core.util._
 import org.loopring.orderbook.lib.etypes._
 import org.loopring.orderbook.proto.account._
 import org.loopring.orderbook.proto.deployment.OrderAmountFacilitatorSettings
@@ -34,7 +35,10 @@ import scala.concurrent.ExecutionContext
 // 3.发送信息给OrderBookManager
 // 4.只管理订单tokenS
 
-class OrderManager(orderBookManager: ActorRef, accountManager: ActorRef)(
+class OrderManager(
+  orderBookManager: ActorRef,
+  accountManager: ActorRef,
+  helper: OrderManagerHelper)(
   implicit
   timeout: Timeout,
   ec: ExecutionContext) extends Actor {
@@ -46,71 +50,37 @@ class OrderManager(orderBookManager: ActorRef, accountManager: ActorRef)(
   var ordermap = mutable.HashMap.empty[String, SortedMap[Long, OrderBeforeMatch]]
   override def receive: Receive = {
     case s: OrderAmountFacilitatorSettings => market = s.tokenS.toLowerCase
-
-    case o: OrderState => for {
-      res <- accountManager ? GetAllowanceAndBalanceReq(o.getRawOrder.owner.safe, o.getRawOrder.tokenS.safe)
-      _ = res match {
-        case r: GetAllowanceAndBalanceRes => addNewOrder(o, r.getAccount.allowance, r.getAccount.balance)
-        case _ =>
-      }
-    } yield null
-
-    case u: OrderUpdateEvent =>
-
-    //    case e: AllowanceChangedEvent =>
-    //      onThisActor() {
-    //        ordermap.get(e.token.safe) match {
-    //          case Some(ord) =>
-    //            orderBookManager ! notify(ord, e)
-    //          case _ =>
-    //        }
-    //      }
-    //
-    //    case e: BalanceChangedEvent =>
-    //      onThisActor() {
-    //        ordermap.get(e.token.safe) match {
-    //          case Some(ord) =>
-    //            orderBookManager ! notify(ord, e)
-    //          case _ =>
-    //        }
-    //      }
-
   }
 
-  // orderState已从链上获取成交量取消量
-  // todo 从accountManager获取balance&allowance
-  private def addNewOrder(order: OrderState, allowance: String, balance: String) = {
-    //    val orderBeforeMatch = OrderBeforeMatch(
-    //      dealtAmountS = order.dealtAmountS,
-    //      cancelAmountS = order.cancelAmountS,
-    //      totalAllowance = allowance,
-    //      totalBalance = balance,
-    //      availableAllowance = allowance,
-    //      availableBalance = balance)
-    //
-    //    if (ordermap.contains(order.getRawOrder.owner.safe)) {
-    //
-    //    } else {
-    //      var sortedMap = SortedMap.empty[Long, OrderBeforeMatch]
-    //      val orderBeforeMatch = OrderBeforeMatch()
-    //    }
+  // todo save into ordermap
+  def handleOrderNew(ord: OrderState, account: Account, feeAccount: Account): OrderForMatch = {
+    val state = ord.copy(dealtAmountS = BigInt(0).toString, cancelAmountS = BigInt(0).toString())
+    val orderBeforeMatch = state.tokenIsFee() match {
+      case true => helper.getOrderBeforeMatchWithFee(state, feeAccount)
+      case false => helper.getOrderBeforeMatchWithoutFee(state, account, feeAccount)
+    }
+    helper.getOrderForMatch(orderBeforeMatch)
   }
 
-  //  private def notify(ord: OrderBeforeMatch, event: AllowanceChangedEvent): OrderMatchNotifyEvent = {
-  //    val available = ord.getMatch.availableAmountS.asBigInt
-  //    val allowance = ord.allowance.asBigInt
-  //    val mord = ord.getMatch.copy(availableAmountS = event.currentAmount, )
-  //
-  //    if (allowance.compare(available) < 0) {
-  //      OrderMatchNotifyEvent().withMatch(ord.getMatch)
-  //    } else {
-  //      OrderMatchNotifyEvent()
-  //    }
-  //  }
-  //
-  //  private def notify(ord: OrderBeforeMatch, event: BalanceChangedEvent): OrderMatchNotifyEvent = {
-  //
-  //  }
+  def handleOrderFill(ord: OrderBeforeMatch, dealtAmountS: BigInt): OrderForMatch = {
+    val orderBeforeMatch = helper.updateOrderBeforeMatchWithTrade(ord, dealtAmountS)
+    helper.getOrderForMatch(orderBeforeMatch)
+  }
+
+  def handleOrderCancel(ord: OrderBeforeMatch, cancelAmountS: BigInt): OrderForMatch = {
+    val orderBeforeMatch = helper.updateOrderBeforeMatchWithTrade(ord, cancelAmountS)
+    helper.getOrderForMatch(orderBeforeMatch)
+  }
+
+  def handleOrderCutoff(ord: OrderBeforeMatch) = OrderForMatch(
+    rawOrder = ord.getState.rawOrder,
+    feeAddress = ord.getState.getRawOrder.feeAddr.safe,
+    availableAmountS = BigInt(0).toString(),
+    availableFee = BigInt(0).toString(),
+    matchType = OrderForMatchType.ORDER_REM)
+
+  // todo
+  def handleAccountUpdate(ordmap: SortedMap[Long, OrderBeforeMatch]): Seq[OrderForMatch] = Seq()
 
   // todo: how to sharding(不能光通过tokenS来分片, lrcFee&2.0后续其他的fee也要考虑)
   private def onThisActor()(op: => Any) = {
@@ -119,5 +89,7 @@ class OrderManager(orderBookManager: ActorRef, accountManager: ActorRef)(
     //    }
     val result = op
   }
+
+  private def key(owner: String, token: String) = owner.safe + "-" + token.safe
 
 }

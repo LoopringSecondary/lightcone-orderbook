@@ -61,4 +61,5 @@ package object etypes {
 
     def toHex: String = Numeric.toHexString(i.toByteArray)
   }
+
 }

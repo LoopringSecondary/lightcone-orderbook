@@ -23,65 +23,65 @@ import org.loopring.orderbook.lib.etypes._
 class OrderManagerHelpImpl()
   extends OrderManagerHelper {
 
-  def handleNewOrder(): OrderForMatch = null
+  def getOrderBeforeMatchWithoutFee(state: OrderState, account: Account, feeAccount: Account) = OrderBeforeMatch(
+    state = Option(state),
+    orderAvailableAmount = state.availableAmountS().toString,
+    accountAvailableAmount = account.min.toString,
+    feeAvailableAmount = feeAccount.min.toString)
 
-  def handleOrderFill(): OrderForMatch = null
+  def getOrderBeforeMatchWithFee(state: OrderState, feeAccount: Account): OrderBeforeMatch = {
+    val availableFee = state.availableFee().min(feeAccount.min)
 
-  def handleOrderCancel(): OrderForMatch = null
-
-  def getOrderForMatchWithoutFee(state: OrderState, account: Account, feeAccount: Account): OrderForMatch = {
-    var matchType = OrderForMatchType.ORDER_UPDATE
-    val orderAvailableAmountS = state.availableAmountS()
-    val accountAvailableAmount = account.min
-    val availableAmountS = if (accountAvailableAmount.compare(orderAvailableAmountS) > 0) {
-      orderAvailableAmountS
+    val availableAmountS = if (availableFee.compare(state.availableAmountS()) > 0) {
+      availableFee.-(state.availableAmountS())
     } else {
-      accountAvailableAmount
+      BigInt(0)
     }
 
-    val orderAvailableFee = state.availableFee()
-    val accountAvailableFee = feeAccount.min
-    val availableFee = if (accountAvailableFee.compare(orderAvailableFee) > 0) {
-      orderAvailableFee
-    } else {
-      accountAvailableFee
-    }
-
-    OrderForMatch(
-      rawOrder = state.rawOrder,
-      feeAddress = state.getRawOrder.feeAddr.safe,
-      availableAmountS = availableAmountS.toString,
-      availableFee = availableFee.toString(),
-      matchType = matchType)
+    OrderBeforeMatch(
+      state = Option(state),
+      orderAvailableAmount = state.availableAmountS().toString,
+      accountAvailableAmount = availableAmountS.toString(),
+      feeAvailableAmount = availableFee.toString())
   }
 
-  def getOrderForMatchWithFee(state: OrderState, account: Account): OrderForMatch = {
-    var matchType = OrderForMatchType.ORDER_UPDATE
-    val orderAvailableFee = state.availableFee()
-    val accountAvailableFee = account.min
-    val availableFee = if (accountAvailableFee.compare(orderAvailableFee) > 0) {
-      orderAvailableFee
-    } else {
-      accountAvailableFee
-    }
+  def updateOrderBeforeMatchWithTrade(src: OrderBeforeMatch, dealtCancelAmount: BigInt): OrderBeforeMatch = {
 
-    val orderAvailableAmountS = state.availableAmountS()
-    val accountAvailableAmount = account.min
-    val availableAmountS = if (accountAvailableAmount.compare(orderAvailableAmountS) > 0) {
-      orderAvailableAmountS
-    } else {
-      accountAvailableAmount
-    }
-
-    OrderForMatch(
-      rawOrder = state.rawOrder,
-      feeAddress = state.getRawOrder.feeAddr.safe,
-      availableAmountS = availableAmountS.toString,
-      availableFee = availableFee.toString(),
-      matchType = matchType)
   }
 
-  def isOrderFinished(availableAmount: BigInt): Boolean = {
+  def updateOrderBeforeMatchWithAccount(src: OrderBeforeMatch, account: Account): OrderBeforeMatch = {
+
+  }
+
+  def getOrderForMatch(ord: OrderBeforeMatch): OrderForMatch = {
+    val orderType = if (ord.getState.dealtAndCancelAmountS.compare(BigInt(0)) == 0) {
+      OrderForMatchType.ORDER_NEW
+    } else if (fundInsufficient(ord)) {
+      OrderForMatchType.ORDER_REM
+    } else {
+      OrderForMatchType.ORDER_UPDATE
+    }
+
+    val availableAmountS = ord.orderAvailableAmount.asBigInt.min(ord.accountAvailableAmount.asBigInt)
+
+    OrderForMatch(
+      rawOrder = ord.getState.rawOrder,
+      feeAddress = ord.getState.getRawOrder.feeAddr.safe,
+      availableAmountS = availableAmountS.toString,
+      availableFee = ord.feeAvailableAmount,
+      matchType = orderType)
+  }
+
+  def fundInsufficient(src: OrderBeforeMatch): Boolean = {
+    if (src.accountAvailableAmount.asBigInt.compare(src.orderAvailableAmount.asBigInt) > 0) {
+      dustAmountS(src.orderAvailableAmount.asBigInt)
+    } else {
+      true
+    }
+  }
+
+  // todo
+  def dustAmountS(availableAmount: BigInt): Boolean = {
     availableAmount.compare(BigInt(0)) <= 0
   }
 

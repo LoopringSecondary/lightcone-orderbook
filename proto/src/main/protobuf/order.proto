@@ -91,10 +91,9 @@ message OrderForMatch {
 
 message OrderBeforeMatch {
     OrderState state = 1;
-    string token_s_allowance = 2;
-    string token_s_balance = 3;
-    string fee_allowance = 4;
-    string fee_balance = 5;
+    string order_available_amount = 2;
+    string account_available_amount = 3;
+    string fee_available_amount = 4;
 }
 
 ///////////////////////////////////
