@@ -41,74 +41,74 @@ class OrderBookManagerHelperSpec extends FlatSpec {
   var orders = mutable.Set[OrderWithAvailableStatus]()
 
   //单方向的深度
-  "one direction depth" should "depth price" in {
-    val startTime = System.currentTimeMillis()
-    var orders = mutable.Set[OrderWithAvailableStatus]()
-    val random = new util.Random()
-    (1 until 20).foreach {
-      i ⇒ {
-        val amountS = random.nextInt(100).abs + 1
-        val amountB = random.nextInt(1000).abs + 1
-        val order = new OrderWithAvailableStatus(OrderForMatch(
-          rawOrder = Some(RawOrder(tokenS = "a", tokenB = "b", amountS = amountS.toString, amountB = amountB.toString, fee = "100", hash = "hash-" + i)),
-          availableFee = "3",
-          availableAmountS = amountS.toString))
-        orders.add(order)
-      }
-    }
-    orders foreach manager.matchOrderAndSetDepthPrice
-
-    val prices = orders.map {
-      o ⇒ Rational(o.rawOrder.amountS.asBigInt, o.rawOrder.amountB.asBigInt)
-    }.toSet
-
-
-    val depths = manager.tokenAOrderBook.depths
-    println("depths:", depths)
-    assert(depths.depthsWithSpecPrices.size == prices.size)
-
-    prices map {
-      price ⇒
-        val (sumAmount, size) = orders.filter {
-          o ⇒ price == Rational(o.rawOrder.amountS.asBigInt, o.rawOrder.amountB.asBigInt)
-        }.foldLeft((BigInt(0), 0)) {
-          (sum, o) ⇒ (sum._1 + o.rawOrder.amountS.asBigInt, sum._2 + 1)
-        }
-        val depth = depths.depthsWithSpecPrices(price)
-        assert(depth.amount == sumAmount && depth.size == size)
-    }
-
-  }
+  //  "one direction depth" should "depth price" in {
+  //    val startTime = System.currentTimeMillis()
+  //    var orders = mutable.Set[OrderWithAvailableStatus]()
+  //    val random = new util.Random()
+  //    (1 until 20).foreach {
+  //      i ⇒ {
+  //        val amountS = random.nextInt(100).abs + 1
+  //        val amountB = random.nextInt(1000).abs + 1
+  //        val order = new OrderWithAvailableStatus(OrderForMatch(
+  //          rawOrder = Some(RawOrder(tokenS = "a", tokenB = "b", amountS = amountS.toString, amountB = amountB.toString, fee = "100", hash = "hash-" + i)),
+  //          availableFee = "3",
+  //          availableAmountS = amountS.toString))
+  //        orders.add(order)
+  //      }
+  //    }
+  //    orders foreach manager.matchOrderAndSetDepthPrice
+  //
+  //    val prices = orders.map {
+  //      o ⇒ Rational(o.rawOrder.amountS.asBigInt, o.rawOrder.amountB.asBigInt)
+  //    }.toSet
+  //
+  //
+  //    val depths = manager.tokenAOrderBook.depths
+  //    println("depths:", depths)
+  //    assert(depths.depthsWithSpecPrices.size == prices.size)
+  //
+  //    prices map {
+  //      price ⇒
+  //        val (sumAmount, size) = orders.filter {
+  //          o ⇒ price == Rational(o.rawOrder.amountS.asBigInt, o.rawOrder.amountB.asBigInt)
+  //        }.foldLeft((BigInt(0), 0)) {
+  //          (sum, o) ⇒ (sum._1 + o.rawOrder.amountS.asBigInt, sum._2 + 1)
+  //        }
+  //        val depth = depths.depthsWithSpecPrices(price)
+  //        assert(depth.amount == sumAmount && depth.size == size)
+  //    }
+  //
+  //  }
 
   //匹配一个订单的
-    "one match" should "match one order" in {
-      val startTime = System.currentTimeMillis()
-      (1 until 200).foreach {
-        i ⇒ {
-          val order = new OrderWithAvailableStatus(OrderForMatch(
-            rawOrder = Some(RawOrder(tokenS = "a", tokenB = "b", amountS = "10", amountB = "100", fee = "100", hash = "hash-" + i)),
-            availableFee = "3",
-            availableAmountS = "10"))
-          if (i % 100 == 0) {
-            println("time4:" + (System.currentTimeMillis() - startTime))
-          }
-          manager.matchOrderAndSetDepthPrice(order)
-        }
-      }
-
-      val otherOrder1 = new OrderWithAvailableStatus(
-        OrderForMatch(
-          rawOrder = Some(RawOrder(tokenS = "b", tokenB = "a", amountS = "200", amountB = "20", fee = "10", hash = "otherhash1")),
+  "one match" should "match one order" in {
+    val startTime = System.currentTimeMillis()
+    (1 until 2).foreach {
+      i ⇒ {
+        val order = new OrderWithAvailableStatus(OrderForMatch(
+          rawOrder = Some(RawOrder(tokenS = "a", tokenB = "b", amountS = "10", amountB = "100", fee = "100", hash = "hash-" + i)),
           availableFee = "3",
-          availableAmountS = "100"))
-      println("time2222:" + (System.currentTimeMillis() - startTime))
-
-      val ring1 = manager.matchOrderAndSetDepthPrice(otherOrder1)
-      println(manager.tokenAOrderBook.depthPrice, manager.tokenBOrderBook.depthPrice)
-      Thread.sleep(100)
-      println(manager.tokenAOrderBook.depths, manager.tokenBOrderBook.depths)
-      //    println(manager.tokenAOrderBook.ordersWithPriceIdx, manager.tokenBOrderBook.ordersWithPriceIdx)
+          availableAmountS = "10"))
+        if (i % 100 == 0) {
+          println("time4:" + (System.currentTimeMillis() - startTime))
+        }
+        manager.matchOrderAndSetDepthPrice(order)
+      }
     }
+
+    val otherOrder1 = new OrderWithAvailableStatus(
+      OrderForMatch(
+        rawOrder = Some(RawOrder(tokenS = "b", tokenB = "a", amountS = "200", amountB = "20", fee = "10", hash = "otherhash1")),
+        availableFee = "3",
+        availableAmountS = "200"))
+    println("time2222:" + (System.currentTimeMillis() - startTime))
+
+    val ring1 = manager.matchOrderAndSetDepthPrice(otherOrder1)
+    println(manager.tokenAOrderBook.depthPrice, manager.tokenBOrderBook.depthPrice)
+    Thread.sleep(100)
+    println(manager.tokenAOrderBook.depths, manager.tokenBOrderBook.depths)
+    //    println(manager.tokenAOrderBook.ordersWithPriceIdx, manager.tokenBOrderBook.ordersWithPriceIdx)
+  }
   //  "test1" should "depth price" in {
   //    val startTime = System.currentTimeMillis()
   //    implicit val dustEvaluator = new DustEvaluator()
