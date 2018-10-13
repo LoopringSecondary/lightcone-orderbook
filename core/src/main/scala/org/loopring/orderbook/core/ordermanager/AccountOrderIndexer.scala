@@ -34,14 +34,14 @@ class AccountOrderIndexer {
     idxmap.getOrElse(safeKey(owner, token), mutable.Set.empty[String]).toSeq
   }
 
-  def add(owner: String, token: String, orderhash: String) = this.synchronized {
+  def add(owner: String, token: String, orderhash: String): Unit = this.synchronized {
     val key = safeKey(owner, token)
     var s = idxmap.getOrElse(key, mutable.Set.empty[String])
     s += safeValue(orderhash)
     idxmap += key -> s
   }
 
-  def del(owner: String, token: String, orderhash: String) = this.synchronized {
+  def del(owner: String, token: String, orderhash: String): Unit = this.synchronized {
     val key = safeKey(owner, token)
     val value = safeValue(orderhash)
 
