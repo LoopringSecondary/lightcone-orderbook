@@ -29,11 +29,7 @@ class OrderManagerHelperImpl(
 
   def handleOrderNew(ord: RawOrder, account: Account, feeAccount: Account): OrderForMatch = {
     val state = orderAccessor.ord2State(ord)
-    val orderBeforeMatch = assemble(state, account, feeAccount)
-    val orderforMatch = convert(orderBeforeMatch)
-    updateOrderAccount(orderBeforeMatch, orderforMatch.matchType)
-
-    orderforMatch
+    processTrade(state, account, feeAccount)
   }
 
   def handleOrderUpdate(event: OrderUpdateEvent): Option[OrderForMatch] = {
@@ -51,11 +47,7 @@ class OrderManagerHelperImpl(
           account
         }
 
-        val orderBeforeMatch = assemble(state, account, feeaccount)
-        val orderForMatch = convert(orderBeforeMatch)
-        updateOrderAccount(orderBeforeMatch, orderForMatch.matchType)
-
-        Option(orderForMatch)
+        Option(processTrade(state, account, feeaccount))
       case _ => Option.empty[OrderForMatch]
     }
 
@@ -69,6 +61,7 @@ class OrderManagerHelperImpl(
       val originAccount = accountAccessor.get(event.owner, event.token)
       var account = originAccount.copy(balance = event.currentAmount)
       val sortedmap = orderAccessor.getSortedOrder(orderhashseq)
+
       sortedmap.map(x => {
         val state = x._2
         val feeaccount = if (state.tokenNotFee) {
@@ -80,53 +73,50 @@ class OrderManagerHelperImpl(
         val orderBeforeMatch = assemble(state, account, feeaccount)
 
         // 计算account.balance在对该订单交易后，下一个订单还可以使用的余额
+        // todo 注意，这里有一个逻辑性的问题，对于普通用户，如果token下有多个订单，那么每成交一笔都应该扣除相应的amountS/lrcFee
+        // todo 这样才能保证下一笔订单的正确成交， 但是如果是做市商，lrcFee允许为0 又不允许扣除lrcFee 这里是冲突的
         // account.balance - availableAmountS
         // if tokenIsFee account.balance - availableFee
+        var restbalance = account.balance.asBigInt
         if (event.token.safe.equals(state.getRawOrder.tokenS.safe)) {
-          val restbalance =
-        } else {
-
+          restbalance = safeSub(restbalance, state.availableAmountS())
+        }
+        if (event.token.safe.equals(state.getRawOrder.feeAddr.safe)) {
+          restbalance = safeSub(restbalance, state.availableFee())
         }
 
-        // todo
-        state.availableAmountS()
-
-        account = account.copy()
-
-        val orderForMatch = convert(orderBeforeMatch)
-        updateOrderAccount(orderBeforeMatch, orderForMatch.matchType)
-        orderForMatch
+        account = account.copy(balance = restbalance.toString())
+        convert(orderBeforeMatch)
       }).toSeq
     }
   }
 
   def handleAllowanceChanged(event: AllowanceChangedEvent): Seq[OrderForMatch] = Seq()
 
-  def updateOrderAccount(ord: OrderBeforeMatch, matchType: OrderForMatchType): Unit = {
-    val state = ord.getState
-    val rawOrder = ord.getState.getRawOrder
+  def processTrade(state: OrderState, account: Account, feeAccount: Account): OrderForMatch = {
+    val orderBeforeMatch = assemble(state, account, feeAccount)
+    val orderForMatch = convert(orderBeforeMatch)
+
+    val rawOrder = state.getRawOrder
     val owner = rawOrder.owner
     val orderhash = rawOrder.hash
     val tokens = rawOrder.tokenS
     val tokenfee = rawOrder.feeAddr
-    val account = Account(balance = ord.tokenSBalance, allowance = ord.tokenSAllowance)
-    val feeaccount = Account(balance = ord.feeBalance, allowance = ord.feeAllowance)
 
-    matchType match {
-      case OrderForMatchType.ORDER_NEW => {
+    orderForMatch.matchType match {
+      case OrderForMatchType.ORDER_NEW =>
         orderAccessor.add(state)
         accountAccessor.addOrUpdate(owner, tokens, account)
         accountOrderIndexer.add(owner, tokens, orderhash)
         if (state.tokenNotFee) {
-          accountAccessor.addOrUpdate(owner, tokenfee, feeaccount)
+          accountAccessor.addOrUpdate(owner, tokenfee, feeAccount)
           accountOrderIndexer.add(owner, tokenfee, orderhash)
         }
-      }
 
       case OrderForMatchType.ORDER_UPDATE =>
         orderAccessor.update(state)
 
-      case OrderForMatchType.ORDER_REM => {
+      case OrderForMatchType.ORDER_REM =>
         orderAccessor.del(orderhash)
         accountOrderIndexer.del(owner, tokens, orderhash)
         if (accountOrderIndexer.size(owner, tokens).equals(0)) {
@@ -138,8 +128,9 @@ class OrderManagerHelperImpl(
             accountAccessor.del(owner, tokenfee)
           }
         }
-      }
     }
+
+    orderForMatch
   }
 
   private def assemble(state: OrderState, account: Account, feeAccount: Account) = OrderBeforeMatch(
