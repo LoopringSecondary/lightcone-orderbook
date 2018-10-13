@@ -25,29 +25,26 @@ import scala.collection.mutable
 
 class AccountAccessor {
 
-  // map[owner, map[token, Account]]
-  var accountmap = mutable.HashMap.empty[String, mutable.HashMap[String, Account]]
+  // map["owner-token", Account]
+  var accountmap = mutable.HashMap.empty[String, Account]
 
+  // 必须存在
   def get(owner: String, token: String): Account = {
-    require(accountmap.contains(owner.safe))
-    val map = accountmap.get(owner.safe)
-    require(map.contains(token.safe))
-    map.get(token.safe)
+    val key = safekey(owner, token)
+    require(accountmap.contains(key))
+    val acc = accountmap.get(key)
+    acc.get
   }
 
   def addOrUpdate(owner: String, token: String, account: Account): Unit = this.synchronized {
-    var map = accountmap.getOrElse(owner.safe, mutable.HashMap.empty[String, Account])
-    map += token.safe -> account
-    accountmap += owner.safe -> map
+    accountmap += safekey(owner, token) -> account
   }
 
   def del(owner: String, token: String): Unit = this.synchronized {
-    require(accountmap.contains(owner.safe))
-    var map = accountmap.getOrElse(owner.safe, mutable.HashMap.empty[String, Account])
-    require(map.contains(token.safe))
-    map -= token.safe
-    if (map.size.equals(0)) {
-      accountmap -= owner.safe
-    }
+    val key = safekey(owner, token)
+    require(accountmap.contains(key))
+    accountmap -= key
   }
+
+  private def safekey(owner: String, token: String) = owner.safe + "-" + token.safe
 }
