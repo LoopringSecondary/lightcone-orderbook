@@ -78,7 +78,19 @@ class OrderManagerHelperImpl(
         }
 
         val orderBeforeMatch = assemble(state, account, feeaccount)
+
+        // 计算account.balance在对该订单交易后，下一个订单还可以使用的余额
+        // account.balance - availableAmountS
+        // if tokenIsFee account.balance - availableFee
+        if (event.token.safe.equals(state.getRawOrder.tokenS.safe)) {
+          val restbalance =
+        } else {
+
+        }
+
         // todo
+        state.availableAmountS()
+
         account = account.copy()
 
         val orderForMatch = convert(orderBeforeMatch)
@@ -89,13 +101,6 @@ class OrderManagerHelperImpl(
   }
 
   def handleAllowanceChanged(event: AllowanceChangedEvent): Seq[OrderForMatch] = Seq()
-
-  /*OrderForMatch(
-    rawOrder = ord.getState.rawOrder,
-    feeAddress = ord.getState.getRawOrder.feeAddr.safe,
-    availableAmountS = BigInt(0).toString(),
-    availableFee = BigInt(0).toString(),
-    matchType = OrderForMatchType.ORDER_REM)*/
 
   def updateOrderAccount(ord: OrderBeforeMatch, matchType: OrderForMatchType): Unit = {
     val state = ord.getState

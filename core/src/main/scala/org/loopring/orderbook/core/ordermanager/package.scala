@@ -26,6 +26,22 @@ package object ordermanager {
 
   def zeroAmount: BigInt = BigInt(0)
 
+  def safeSub(a1: BigInt, a2: BigInt): BigInt = {
+    if (a1.compare(a2) > 0) {
+      a1.-(a2)
+    } else {
+      BigInt(0)
+    }
+  }
+
+  def safeSub(a1: Rational, a2: Rational): BigInt = {
+    if (a1.compare(a2) > 0) {
+      (a1 - a2).bigintValue()
+    } else {
+      BigInt(0)
+    }
+  }
+
   implicit class RichAccount(src: Account) {
     def min: BigInt = src.allowance.asBigInt.min(src.balance.asBigInt)
 
@@ -48,20 +64,11 @@ package object ordermanager {
       val cancelAmountS = src.cancelAmountS.asBigInt
       val dealtAndCancelAmount = dealtAmountS.+(cancelAmountS)
 
-      if (totalAmountS.compare(dealtAndCancelAmount) > 0) {
-        totalAmountS.-(dealtAndCancelAmount)
-      } else {
-        BigInt(0)
-      }
+      safeSub(totalAmountS, dealtAndCancelAmount)
     }
 
     def availableAmountS(dealtCancelAmount: BigInt): BigInt = {
-      val available = src.availableAmountS()
-      if (available.compare(dealtCancelAmount) > 0) {
-        available.-(dealtCancelAmount)
-      } else {
-        BigInt(0)
-      }
+      safeSub(src.availableAmountS(), dealtCancelAmount)
     }
 
     // 待成交fee
@@ -71,11 +78,7 @@ package object ordermanager {
       val fillRate = src.dealtAmountS.asRational / Rational(rawOrder.amountS.asBigInt)
       val dealtFee = fillRate * Rational(rawOrder.fee.asBigInt)
 
-      if (rawFee.compare(dealtFee) > 0) {
-        (rawFee - dealtFee).bigintValue()
-      } else {
-        BigInt(0)
-      }
+      safeSub(rawFee, dealtFee)
     }
 
     def tokenIsFee(): Boolean = {
@@ -113,11 +116,7 @@ package object ordermanager {
       val available = src.feeAvailableAmount
       val amounts = state.availableAmountS()
 
-      if (account.compare(available) > 0) {
-        amounts.min(account.-(available))
-      } else {
-        BigInt(0)
-      }
+      amounts.min(safeSub(account, available))
     } else {
       src.minTokenAccount
     }

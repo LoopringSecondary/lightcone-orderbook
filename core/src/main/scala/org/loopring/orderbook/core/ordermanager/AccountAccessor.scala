@@ -20,9 +20,8 @@ package org.loopring.orderbook.core.ordermanager
 
 import org.loopring.orderbook.lib.etypes._
 import org.loopring.orderbook.proto.account._
-import org.loopring.orderbook.proto.order._
 
-import scala.collection.{ SortedMap, mutable }
+import scala.collection.mutable
 
 class AccountAccessor {
 

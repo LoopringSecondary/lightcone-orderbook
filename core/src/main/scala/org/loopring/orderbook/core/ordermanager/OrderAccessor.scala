@@ -19,7 +19,6 @@
 package org.loopring.orderbook.core.ordermanager
 
 import org.loopring.orderbook.proto.order._
-import org.loopring.orderbook.core.util._
 import org.loopring.orderbook.lib.time.TimeProvider
 import org.loopring.orderbook.lib.etypes._
 
