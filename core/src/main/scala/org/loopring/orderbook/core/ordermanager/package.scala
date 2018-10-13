@@ -15,15 +15,16 @@
   limitations under the License.
 
 */
-
 package org.loopring.orderbook.core
 
-import org.loopring.orderbook.lib.math.Rational
-import org.loopring.orderbook.proto.order.{ OrderBeforeMatch, OrderForMatch, OrderState }
 import org.loopring.orderbook.lib.etypes._
+import org.loopring.orderbook.lib.math.Rational
 import org.loopring.orderbook.proto.account.Account
+import org.loopring.orderbook.proto.order._
 
-package object util {
+package object ordermanager {
+
+  def zeroAmount: BigInt = BigInt(0)
 
   implicit class RichAccount(src: Account) {
     def min: BigInt = src.allowance.asBigInt.min(src.balance.asBigInt)
@@ -121,5 +122,4 @@ package object util {
       src.minTokenAccount
     }
   }
-
 }
