@@ -53,45 +53,48 @@ class OrderManagerHelperImpl(
 
   }
 
-  def handleBalanceChanged(event: BalanceChangedEvent): Seq[OrderForMatch] = {
+  def handleAccountChanged(event: AccountChangedEvent): Seq[OrderForMatch] = {
     val orderhashseq = accountOrderIndexer.getOrderhashList(event.owner, event.token)
     if (orderhashseq.isEmpty) {
-      Seq()
-    } else {
       val originAccount = accountAccessor.get(event.owner, event.token)
-      var account = originAccount.copy(balance = event.currentAmount)
+      var account = event.toAccount(originAccount)
       val sortedmap = orderAccessor.getSortedOrder(orderhashseq)
 
       sortedmap.map(x => {
+        // get OrderForMatch
         val state = x._2
         val feeaccount = if (state.tokenNotFee) {
           accountAccessor.get(event.owner, state.getRawOrder.feeAddr)
         } else {
           account
         }
-
-        val orderBeforeMatch = assemble(state, account, feeaccount)
+        val orderForMatch = processTrade(state, account, feeaccount)
 
         // 计算account.balance在对该订单交易后，下一个订单还可以使用的余额
         // todo 注意，这里有一个逻辑性的问题，对于普通用户，如果token下有多个订单，那么每成交一笔都应该扣除相应的amountS/lrcFee
         // todo 这样才能保证下一笔订单的正确成交， 但是如果是做市商，lrcFee允许为0 又不允许扣除lrcFee 这里是冲突的
         // account.balance - availableAmountS
         // if tokenIsFee account.balance - availableFee
-        var restbalance = account.balance.asBigInt
-        if (event.token.safe.equals(state.getRawOrder.tokenS.safe)) {
-          restbalance = safeSub(restbalance, state.availableAmountS())
+        var restamount = if (event.isBalance) {
+          account.balance.asBigInt
+        } else {
+          account.allowance.asBigInt
         }
         if (event.token.safe.equals(state.getRawOrder.feeAddr.safe)) {
-          restbalance = safeSub(restbalance, state.availableFee())
+          restamount = safeSub(restamount, state.availableFee())
         }
+        if (event.token.safe.equals(state.getRawOrder.tokenS.safe)) {
+          restamount = safeSub(restamount, state.availableAmountS())
+        }
+        account = account.copy(balance = restamount.toString())
+        accountAccessor.addOrUpdate(event.owner, event.token, account)
 
-        account = account.copy(balance = restbalance.toString())
-        convert(orderBeforeMatch)
+        orderForMatch
       }).toSeq
+    } else {
+      Seq.empty[OrderForMatch]
     }
   }
-
-  def handleAllowanceChanged(event: AllowanceChangedEvent): Seq[OrderForMatch] = Seq()
 
   def processTrade(state: OrderState, account: Account, feeAccount: Account): OrderForMatch = {
     val orderBeforeMatch = assemble(state, account, feeAccount)
@@ -128,6 +131,8 @@ class OrderManagerHelperImpl(
             accountAccessor.del(owner, tokenfee)
           }
         }
+
+      case _ => throw new Exception("match type error")
     }
 
     orderForMatch

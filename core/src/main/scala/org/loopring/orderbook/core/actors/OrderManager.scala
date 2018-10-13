@@ -28,11 +28,6 @@ import org.loopring.orderbook.proto.order._
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-// 1.所有非终态订单存储到内存
-// 2.接收balanceManager的balanceUpdate,allowanceUpdate事件并更新订单可用余额
-// 3.发送信息给OrderBookManager
-// 4.只管理订单tokenS
-
 class OrderManager(
   orderBookManager: ActorRef,
   accountManager: ActorRef,
@@ -66,12 +61,14 @@ class OrderManager(
     }
 
     case e: BalanceChangedEvent => onThisShard() {
-      val seq = helper.handleBalanceChanged(e)
+      val event = AccountChangedEvent(token = e.token, owner = e.owner, amount = e.currentAmount, isBalance = true)
+      val seq = helper.handleAccountChanged(event)
       seq.map(orderBookManager ! _)
     }
 
     case e: AllowanceChangedEvent => onThisShard() {
-      val seq = helper.handleAllowanceChanged(e)
+      val event = AccountChangedEvent(token = e.token, owner = e.owner, amount = e.currentAmount, isBalance = false)
+      val seq = helper.handleAccountChanged(event)
       seq.map(orderBookManager ! _)
     }
 

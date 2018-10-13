@@ -19,7 +19,7 @@ package org.loopring.orderbook.core
 
 import org.loopring.orderbook.lib.etypes._
 import org.loopring.orderbook.lib.math.Rational
-import org.loopring.orderbook.proto.account.Account
+import org.loopring.orderbook.proto.account._
 import org.loopring.orderbook.proto.order._
 
 package object ordermanager {
@@ -46,6 +46,18 @@ package object ordermanager {
     def min: BigInt = src.allowance.asBigInt.min(src.balance.asBigInt)
 
     def max: BigInt = src.allowance.asBigInt.max(src.balance.asBigInt)
+  }
+
+  implicit class RichAccountChangedEvent(event: AccountChangedEvent) {
+
+    def toAccount(origin: Account): Account = {
+      if (event.isBalance) {
+        origin.copy(balance = event.amount)
+      } else {
+        origin.copy(allowance = event.amount)
+      }
+    }
+
   }
 
   implicit class RichOrderState(src: OrderState) {

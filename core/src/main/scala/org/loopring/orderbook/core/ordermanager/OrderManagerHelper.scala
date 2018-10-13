@@ -18,13 +18,13 @@
 
 package org.loopring.orderbook.core.ordermanager
 
-import org.loopring.orderbook.proto.account.{ Account, AllowanceChangedEvent, BalanceChangedEvent }
-import org.loopring.orderbook.proto.order.{ OrderBeforeMatch, OrderForMatch, OrderUpdateEvent, RawOrder }
+import org.loopring.orderbook.proto.account._
+import org.loopring.orderbook.proto.order._
 
 trait OrderManagerHelper {
 
   def handleOrderNew(ord: RawOrder, account: Account, feeAccount: Account): OrderForMatch
   def handleOrderUpdate(event: OrderUpdateEvent): Option[OrderForMatch]
-  def handleBalanceChanged(event: BalanceChangedEvent): Seq[OrderForMatch]
-  def handleAllowanceChanged(event: AllowanceChangedEvent): Seq[OrderForMatch]
+  def handleAccountChanged(event: AccountChangedEvent): Seq[OrderForMatch]
+
 }

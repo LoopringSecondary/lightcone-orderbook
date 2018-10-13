@@ -26,8 +26,8 @@ message BalanceChangedEvent {
 message AccountChangedEvent {
     string token = 1;
     string owner = 2;
-    string balance = 3;  // 账户总额
-    string allowance = 4; // 账户总额
+    string amount = 3;  // 账户总额
+    bool   is_balance = 4; // true: balance, false: allowance
 }
 
 message GetAllowanceAndBalanceReq {
