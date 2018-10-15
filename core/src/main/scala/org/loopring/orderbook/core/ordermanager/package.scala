@@ -15,20 +15,49 @@
   limitations under the License.
 
 */
-
 package org.loopring.orderbook.core
 
-import org.loopring.orderbook.lib.math.Rational
-import org.loopring.orderbook.proto.order.{ OrderBeforeMatch, OrderForMatch, OrderState }
 import org.loopring.orderbook.lib.etypes._
-import org.loopring.orderbook.proto.account.Account
+import org.loopring.orderbook.lib.math.Rational
+import org.loopring.orderbook.proto.account._
+import org.loopring.orderbook.proto.order._
 
-package object util {
+package object ordermanager {
+
+  def zeroAmount: BigInt = BigInt(0)
+
+  def safeSub(a1: BigInt, a2: BigInt): BigInt = {
+    if (a1.compare(a2) > 0) {
+      a1.-(a2)
+    } else {
+      BigInt(0)
+    }
+  }
+
+  def safeSub(a1: Rational, a2: Rational): BigInt = {
+    if (a1.compare(a2) > 0) {
+      (a1 - a2).bigintValue()
+    } else {
+      BigInt(0)
+    }
+  }
 
   implicit class RichAccount(src: Account) {
     def min: BigInt = src.allowance.asBigInt.min(src.balance.asBigInt)
 
     def max: BigInt = src.allowance.asBigInt.max(src.balance.asBigInt)
+  }
+
+  implicit class RichAccountChangedEvent(event: AccountChangedEvent) {
+
+    def toAccount(origin: Account): Account = {
+      if (event.isBalance) {
+        origin.copy(balance = event.amount)
+      } else {
+        origin.copy(allowance = event.amount)
+      }
+    }
+
   }
 
   implicit class RichOrderState(src: OrderState) {
@@ -47,20 +76,11 @@ package object util {
       val cancelAmountS = src.cancelAmountS.asBigInt
       val dealtAndCancelAmount = dealtAmountS.+(cancelAmountS)
 
-      if (totalAmountS.compare(dealtAndCancelAmount) > 0) {
-        totalAmountS.-(dealtAndCancelAmount)
-      } else {
-        BigInt(0)
-      }
+      safeSub(totalAmountS, dealtAndCancelAmount)
     }
 
     def availableAmountS(dealtCancelAmount: BigInt): BigInt = {
-      val available = src.availableAmountS()
-      if (available.compare(dealtCancelAmount) > 0) {
-        available.-(dealtCancelAmount)
-      } else {
-        BigInt(0)
-      }
+      safeSub(src.availableAmountS(), dealtCancelAmount)
     }
 
     // 待成交fee
@@ -70,11 +90,7 @@ package object util {
       val fillRate = src.dealtAmountS.asRational / Rational(rawOrder.amountS.asBigInt)
       val dealtFee = fillRate * Rational(rawOrder.fee.asBigInt)
 
-      if (rawFee.compare(dealtFee) > 0) {
-        (rawFee - dealtFee).bigintValue()
-      } else {
-        BigInt(0)
-      }
+      safeSub(rawFee, dealtFee)
     }
 
     def tokenIsFee(): Boolean = {
@@ -112,14 +128,9 @@ package object util {
       val available = src.feeAvailableAmount
       val amounts = state.availableAmountS()
 
-      if (account.compare(available) > 0) {
-        amounts.min(account.-(available))
-      } else {
-        BigInt(0)
-      }
+      amounts.min(safeSub(account, available))
     } else {
       src.minTokenAccount
     }
   }
-
 }

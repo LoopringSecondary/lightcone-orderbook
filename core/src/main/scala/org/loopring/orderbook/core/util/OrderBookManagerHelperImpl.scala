@@ -259,18 +259,18 @@ class OrderWithAvailableStatus(order: OrderForMatch) {
 }
 
 /**
-  * 接收到新订单之后，先向对手方向请求撮合，根据撮合结果，确定订单的状态是否为defer
-  * 如果为defer，则不发给depth，否则发给depth
-  *
-  * 定时器:
-  * 1、定时获取对手方向的最大价格，根据最大价格，将未defer的订单，发给对手方撮合，确定订单状态
-  * 2、定时根据validsince和validuntil增加和删除订单
-  * 3、定时检测defer的订单，过了defer时间，则发给对手方撮合，再确定状态
-  *
-  * 需要保存内容：
-  * 1、订单的可用金额，包括settling和balance
-  * 2、
-  */
+ * 接收到新订单之后，先向对手方向请求撮合，根据撮合结果，确定订单的状态是否为defer
+ * 如果为defer，则不发给depth，否则发给depth
+ *
+ * 定时器:
+ * 1、定时获取对手方向的最大价格，根据最大价格，将未defer的订单，发给对手方撮合，确定订单状态
+ * 2、定时根据validsince和validuntil增加和删除订单
+ * 3、定时检测defer的订单，过了defer时间，则发给对手方撮合，再确定状态
+ *
+ * 需要保存内容：
+ * 1、订单的可用金额，包括settling和balance
+ * 2、
+ */
 class OrderBookManagerHelperImpl(
   tokenA: String,
   tokenB: String)(implicit dustEvaluator: DustEvaluator) {
@@ -297,46 +297,47 @@ class OrderBookManagerHelperImpl(
     }
     //todo:int.max_value should be instead.
     val matchStatus =
-    //    MatchStatus(
-    //      remainedOrder = order, rings = Seq[Ring](), sellPrice = Rational(0))
+      //    MatchStatus(
+      //      remainedOrder = order, rings = Seq[Ring](), sellPrice = Rational(0))
       otherOrderbook.rangeOrders(Rational(1) / order.sellPrice, Rational.MaxIntValue).foldLeft {
         MatchStatus(
           remainedOrder = order, rings = Seq[Ring](), sellPrice = Rational(0))
       } {
-        (status, otherOrder) ⇒ {
-          if (!dustEvaluator.isDust(status.remainedOrder.availableAmountS)) {
-            val ring = calReceived(status.remainedOrder, otherOrder)
-            var (filledOrder, otherFilledOrder) = if (ring.orders.head.rawOrder.hash.equalsIgnoreCase(status.remainedOrder.rawOrder.hash)) {
-              (ring.orders.head, ring.orders(1))
-            } else {
-              (ring.orders(1), ring.orders.head)
-            }
-            //todo：需要确定隐藏的价格，以及删除完全匹配的订单
-            if (status.remainedOrder.updateAvailable(filledOrder.filledAmountS.negValue(), filledOrder.lrcFee.negValue())) {
-              if (otherOrderbook.updateOrder(otherOrder, otherFilledOrder.filledAmountS.negValue(), otherFilledOrder.lrcFee.negValue())) {
-                if (dustEvaluator.isDust(otherOrder.availableAmountS)) {
-                  otherOrderbook.delOrder(otherOrder.rawOrder.hash)
-                }
-                //                else {
-                //                  otherDepthEvents.add(DepthEvent(otherOrder.sellPrice, 0, otherFilledOrder.filledAmountS.negValue().bigintValue()))
-                //                }
-                status.copy(remainedOrder = status.remainedOrder, rings = status.rings :+ ring)
+        (status, otherOrder) ⇒
+          {
+            if (!dustEvaluator.isDust(status.remainedOrder.availableAmountS)) {
+              val ring = calReceived(status.remainedOrder, otherOrder)
+              var (filledOrder, otherFilledOrder) = if (ring.orders.head.rawOrder.hash.equalsIgnoreCase(status.remainedOrder.rawOrder.hash)) {
+                (ring.orders.head, ring.orders(1))
               } else {
-                status.remainedOrder.updateAvailable(filledOrder.filledAmountS, filledOrder.lrcFee)
+                (ring.orders(1), ring.orders.head)
+              }
+              //todo：需要确定隐藏的价格，以及删除完全匹配的订单
+              if (status.remainedOrder.updateAvailable(filledOrder.filledAmountS.negValue(), filledOrder.lrcFee.negValue())) {
+                if (otherOrderbook.updateOrder(otherOrder, otherFilledOrder.filledAmountS.negValue(), otherFilledOrder.lrcFee.negValue())) {
+                  if (dustEvaluator.isDust(otherOrder.availableAmountS)) {
+                    otherOrderbook.delOrder(otherOrder.rawOrder.hash)
+                  }
+                  //                else {
+                  //                  otherDepthEvents.add(DepthEvent(otherOrder.sellPrice, 0, otherFilledOrder.filledAmountS.negValue().bigintValue()))
+                  //                }
+                  status.copy(remainedOrder = status.remainedOrder, rings = status.rings :+ ring)
+                } else {
+                  status.remainedOrder.updateAvailable(filledOrder.filledAmountS, filledOrder.lrcFee)
+                  status
+                }
+              } else {
                 status
               }
             } else {
               status
             }
-          } else {
-            status
           }
-        }
       }
 
     /**
-      * otherOrder 根据匹配完成之后的可用余额，则判断是否有隐藏的订单，然后判断当前的深度价格变化，决定otherorderbook的深度变化
-      */
+     * otherOrder 根据匹配完成之后的可用余额，则判断是否有隐藏的订单，然后判断当前的深度价格变化，决定otherorderbook的深度变化
+     */
     //    if (!dustEvaluator.isDust(order.availableAmountS)) {
     orderbook.addOrReplaceOrder(order)
     //    }
@@ -346,31 +347,32 @@ class OrderBookManagerHelperImpl(
       //订单在交叉部分，则放入到otherorderbook的深度里
       //todo:更改orderbook的depthprice
       /**
-        * 首先确定orderbook的depthprice，再确定otherorderbook的depthprice
-        */
+       * 首先确定orderbook的depthprice，再确定otherorderbook的depthprice
+       */
       //则需要进行比较决定隐藏的订单, 应该只比较最高价格的
       //      var otherMayHidePrice = otherDepthPrice
       val prices = otherOrderbook.rangeSellPrice(Rational(1) / order.sellPrice, depthPrice)
       //决定orderbook的depth，全部没有了，则为maxprice
       //否则每个price都遍历，已经没有无订单的price了，每个price都会有订单
       var (hide, otherMayHidePrice) =
-      prices.foldLeft((false, otherDepthPrice)) {
-        (res, price) ⇒ {
-          var thisHideFlag = res._1
-          var otherPrice = res._2
-          if (!thisHideFlag) {
-            otherOrderbook.getOrdersByPrice(price).foreach {
-              otherOrder ⇒
-                val avaiableAmountB = otherOrder.availableAmountB
-                if (avaiableAmountB > order.availableAmountS) {
-                  otherPrice = price
-                  thisHideFlag = true
+        prices.foldLeft((false, otherDepthPrice)) {
+          (res, price) ⇒
+            {
+              var thisHideFlag = res._1
+              var otherPrice = res._2
+              if (!thisHideFlag) {
+                otherOrderbook.getOrdersByPrice(price).foreach {
+                  otherOrder ⇒
+                    val avaiableAmountB = otherOrder.availableAmountB
+                    if (avaiableAmountB > order.availableAmountS) {
+                      otherPrice = price
+                      thisHideFlag = true
+                    }
                 }
+              }
+              (thisHideFlag, otherPrice)
             }
-          }
-          (thisHideFlag, otherPrice)
         }
-      }
       otherOrderbook.hideOrdersBellowSellPrice(otherMayHidePrice)
       val newOtherDepthPrice = otherOrderbook.depthPrice
       val newDepthPrice = if (Rational.MaxIntValue == newOtherDepthPrice) Rational.MaxIntValue else Rational(1) / newOtherDepthPrice

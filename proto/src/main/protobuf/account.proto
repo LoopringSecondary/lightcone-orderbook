@@ -4,6 +4,13 @@ option java_multiple_files = true;
 option java_package = "org.loopring.orderbook.proto";
 package org.loopring.orderbook.proto;
 
+message Account {
+    string owner = 1;
+    string token = 2;
+    string balance = 3;
+    string allowance = 4;
+}
+
 message AllowanceChangedEvent {
     string token = 1;
     string owner = 2;
@@ -16,11 +23,11 @@ message BalanceChangedEvent {
     string current_amount = 3;
 }
 
-message Account {
-    string owner = 1;
-    string token = 2;
-    string balance = 3;
-    string allowance = 4;
+message AccountChangedEvent {
+    string token = 1;
+    string owner = 2;
+    string amount = 3;  // 账户总额
+    bool   is_balance = 4; // true: balance, false: allowance
 }
 
 message GetAllowanceAndBalanceReq {
