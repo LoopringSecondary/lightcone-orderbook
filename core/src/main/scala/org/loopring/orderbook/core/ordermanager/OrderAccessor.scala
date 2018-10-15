@@ -29,11 +29,11 @@ class OrderAccessor(timeProvider: TimeProvider) {
   // map[orderhash, orderState]
   var ordermap = mutable.HashMap.empty[String, OrderState]
 
-  def getSingleOrder(orderhash: String): Option[OrderState] = this.synchronized {
+  def getSingleOrder(orderhash: String): Option[OrderState] = {
     ordermap.get(safekey(orderhash))
   }
 
-  def getSortedOrder(seq: Seq[String]): mutable.SortedMap[Long, OrderState] = this.synchronized {
+  def getSortedOrder(seq: Seq[String]): mutable.SortedMap[Long, OrderState] =  {
     var sortedmap = mutable.SortedMap.empty[Long, OrderState]
     seq.map(x => {
       ordermap.get(x) match {
