@@ -36,18 +36,18 @@ case class Depth(size: Int, amount: BigInt)
 case class DepthEvent(sellPrice: Rational, incrSize: Int, incrAmount: BigInt)
 
 /**
-  * 一轮匹配之后，需要决定，订单的剩余金额、深度价格、影响到深度价格的所有价格对应的交易量和数量，订单缩减完成
-  * 1、如果有剩余的金额，则需要隐藏部分订单
-  * 2、如果没有剩余金额，则不用管
-  * 3、匹配过程中需要同步更改lrcfee和availableamounts
-  * 4、匹配完成后，更改所有影响到的sellprice给depth，影响到的depth可能是两个方向的，一旦吃掉最高价之后，也需要移动sellprice
-  */
+ * 一轮匹配之后，需要决定，订单的剩余金额、深度价格、影响到深度价格的所有价格对应的交易量和数量，订单缩减完成
+ * 1、如果有剩余的金额，则需要隐藏部分订单
+ * 2、如果没有剩余金额，则不用管
+ * 3、匹配过程中需要同步更改lrcfee和availableamounts
+ * 4、匹配完成后，更改所有影响到的sellprice给depth，影响到的depth可能是两个方向的，一旦吃掉最高价之后，也需要移动sellprice
+ */
 case class MatchStatus(remainedOrder: OrderWithAvailableStatus, rings: Seq[Ring], sellPrice: Rational)
 
 /**
-  * 新订单，首先进行撮合，然后选择sellprice来确定深度图的价格，然后缩减相应的订单剩余金额
-  * 匹配之后，本轮的最大价格，根据该价格释放隐藏的深度
-  */
+ * 新订单，首先进行撮合，然后选择sellprice来确定深度图的价格，然后缩减相应的订单剩余金额
+ * 匹配之后，本轮的最大价格，根据该价格释放隐藏的深度
+ */
 
 class PriceIndex() {
   var index = mutable.TreeMap[Rational, Set[String]]()
@@ -82,7 +82,6 @@ class PriceIndex() {
 
 }
 
-
 class Depths {
   var depthChanges = mutable.Queue[Depth]()
   var depthsWithSpecPrices = mutable.TreeMap[Rational, Depth]()
@@ -109,15 +108,15 @@ class Depths {
 }
 
 /**
-  * 保存订单
-  * 所有订单放置在orders中，根据不同情况放入不同的index中
-  * 查询时，根据index进行查询
-  *
-  * ordersWithPriceIdx 按照价格保存订单，保存的订单类型为：在有效期内的，包含delay的，不包含灰尘单
-  */
+ * 保存订单
+ * 所有订单放置在orders中，根据不同情况放入不同的index中
+ * 查询时，根据index进行查询
+ *
+ * ordersWithPriceIdx 按照价格保存订单，保存的订单类型为：在有效期内的，包含delay的，不包含灰尘单
+ */
 class OrderBook {
   var orders = mutable.HashMap[String, OrderWithAvailableStatus]()
-
+  orders.sizeHint(2000000)
   var depthPrice = Rational.MaxIntValue
 
   var depths = new Depths()
@@ -185,7 +184,7 @@ class OrderBook {
 
   def rangeSellPrice(from: Rational, until: Rational): Seq[Rational] = {
     var prices = ordersWithPriceIdx.index.range(Rational(0), until).keys.toSeq
-    if (ordersWithPriceIdx.index.range(until, until).keys.nonEmpty) {
+    if (ordersWithPriceIdx.index.contains(until)) {
       prices :+ until
     } else {
       prices
@@ -193,7 +192,7 @@ class OrderBook {
   }
 
   def nextLittlePrice(until: Rational): Rational = {
-    if (ordersWithPriceIdx.index.range(until, until).keys.nonEmpty) {
+    if (ordersWithPriceIdx.index.contains(until)) {
       until
     } else {
       var prices = ordersWithPriceIdx.index.range(Rational(0), until).keys

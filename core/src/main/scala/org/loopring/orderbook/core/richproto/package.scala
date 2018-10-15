@@ -28,11 +28,11 @@ package object richproto {
 
   implicit class RichRawOrder(rawOrder: RawOrder) {
     def getAvailableAmountS(availableAmountB: Rational): Rational = {
-      Rational(rawOrder.amountS.asBigInt) * availableAmountB / Rational(rawOrder.amountB.asBigInt)
+      rawOrder.amountS.asRational * availableAmountB / rawOrder.amountB.asRational
     }
 
     def getAvailableAmountB(availableAmountS: Rational): Rational = {
-      Rational(rawOrder.amountB.asBigInt) * availableAmountS / Rational(rawOrder.amountS.asBigInt)
+      rawOrder.amountB.asRational * availableAmountS / rawOrder.amountS.asRational
     }
   }
 

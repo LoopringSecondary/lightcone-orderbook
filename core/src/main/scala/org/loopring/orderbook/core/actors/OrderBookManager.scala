@@ -20,7 +20,7 @@ package org.loopring.orderbook.core.actors
 
 import akka.actor.Actor
 import akka.util.Timeout
-import org.loopring.orderbook.core.util.{DustEvaluator, OrderBookManagerHelperImpl}
+import org.loopring.orderbook.core.util.{ DustEvaluator, OrderBookManagerHelperImpl }
 
 import scala.concurrent.ExecutionContext
 
