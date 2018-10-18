@@ -19,6 +19,6 @@
 package org.loopring.orderbook.core.util
 
 trait OrderBookManagerHelper {
-  def matchOrderAndSetDepthPrice(order: OrderWithAvailableStatus)
+  def matchOrderAndSetDepthPrice(order: OrderWithAvailableStatus): MatchStatus
   def calReceived(order1: OrderWithAvailableStatus, order2: OrderWithAvailableStatus): Ring
 }

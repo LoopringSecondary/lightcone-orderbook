@@ -31,10 +31,6 @@ case class Ring(received: Rational, orders: Seq[FilledOrder])
 
 case class OrderForDepth(sellPrice: Rational, hash: String, amount: Rational, size: Int)
 
-case class Depth(size: Int, amount: BigInt)
-
-case class DepthEvent(sellPrice: Rational, incrSize: Int, incrAmount: BigInt)
-
 /**
  * 一轮匹配之后，需要决定，订单的剩余金额、深度价格、影响到深度价格的所有价格对应的交易量和数量，订单缩减完成
  * 1、如果有剩余的金额，则需要隐藏部分订单
@@ -48,64 +44,6 @@ case class MatchStatus(remainedOrder: OrderWithAvailableStatus, rings: Seq[Ring]
  * 新订单，首先进行撮合，然后选择sellprice来确定深度图的价格，然后缩减相应的订单剩余金额
  * 匹配之后，本轮的最大价格，根据该价格释放隐藏的深度
  */
-
-class PriceIndex() {
-  var index = mutable.TreeMap[Rational, Set[String]]()
-
-  def add(sellPrice: Rational, rawOrder: RawOrder) = {
-    index.synchronized {
-      var orderHashes = index.getOrElse(sellPrice, Set[String]())
-      orderHashes = orderHashes + rawOrder.hash.toLowerCase
-      index.put(sellPrice, orderHashes)
-    }
-  }
-
-  def del(sellPrice: Rational, orderhash: String) = {
-    index.synchronized {
-      var orderHashes = index.getOrElse(sellPrice, Set[String]())
-      orderHashes = orderHashes - orderhash.toLowerCase
-      if (orderHashes.nonEmpty) {
-        index.put(sellPrice, orderHashes)
-      } else {
-        index.remove(sellPrice)
-      }
-    }
-  }
-
-  def range(from: Rational, until: Rational) = {
-    index.range(from, until).flatMap(_._2)
-  }
-
-  def get(sellPrice: Rational) = {
-    index.getOrElse(sellPrice, Set[String]())
-  }
-
-}
-
-class Depths {
-  var depthChanges = mutable.Queue[Depth]()
-  var depthsWithSpecPrices = mutable.TreeMap[Rational, Depth]()
-  var depthsWithPrices = mutable.TreeMap[Rational, Depth]()
-
-  def updateDepth(evt: DepthEvent) = {
-    depthsWithSpecPrices.synchronized {
-      val depth1 = depthsWithSpecPrices.getOrElse(evt.sellPrice, Depth(0, BigInt(0)))
-      if (evt.incrAmount.signum >= 0 || (evt.incrAmount.abs < depth1.amount && evt.incrSize.abs < depth1.size)) {
-        depthsWithSpecPrices.put(evt.sellPrice, depth1.copy(size = depth1.size + evt.incrSize, amount = depth1.amount + evt.incrAmount))
-      } else {
-        depthsWithSpecPrices.remove(evt.sellPrice)
-      }
-    }
-  }
-
-  def setDepth(sellPrice: Rational, depth: Depth) = {
-    depthsWithSpecPrices.synchronized(depthsWithSpecPrices.put(sellPrice, depth))
-  }
-
-  override def toString: String = {
-    depthsWithSpecPrices.toString()
-  }
-}
 
 /**
  * 保存订单
@@ -286,14 +224,14 @@ class OrderBookManagerHelperImpl(
    */
 
   //决定是否匹配，并给出深度价格
-  def matchOrderAndSetDepthPrice(order: OrderWithAvailableStatus) = {
-    //todo:cache暂未实现
-//    matchedCacher.getCacheInfo(order.rawOrder.hash) match {
-//      case None ⇒
-//      case Some(filledOrder) ⇒
-//        order.availableAmountS = order.availableAmountS - filledOrder.filledAmountS
-//        order.availableAmountB = order.rawOrder.getAvailableAmountB(order.availableAmountS)
-//    }
+  def matchOrderAndSetDepthPrice(order: OrderWithAvailableStatus): MatchStatus = {
+    //todo:cache暂未实现,实现后放开
+    //    matchedCacher.getCacheInfo(order.rawOrder.hash) match {
+    //      case None ⇒
+    //      case Some(filledOrder) ⇒
+    //        order.availableAmountS = order.availableAmountS - filledOrder.filledAmountS
+    //        order.availableAmountB = order.rawOrder.getAvailableAmountB(order.availableAmountS)
+    //    }
 
     val (otherOrderbook, orderbook) = if (order.rawOrder.tokenS.equalsIgnoreCase(tokenA)) {
       (tokenBOrderBook, tokenAOrderBook)
@@ -343,9 +281,9 @@ class OrderBookManagerHelperImpl(
     /**
      * otherOrder 根据匹配完成之后的可用余额，则判断是否有隐藏的订单，然后判断当前的深度价格变化，决定otherorderbook的深度变化
      */
-    //    if (!dustEvaluator.isDust(order.availableAmountS)) {
-    orderbook.addOrReplaceOrder(order)
-    //    }
+    if (!dustEvaluator.isDust(order.availableAmountS)) {
+      orderbook.addOrReplaceOrder(order)
+    }
     this.synchronized {
       var depthPrice = orderbook.depthPrice
       var otherDepthPrice = otherOrderbook.depthPrice
@@ -386,9 +324,9 @@ class OrderBookManagerHelperImpl(
     }
 
     //todo:cache暂未实现
-//    matchStatus.rings foreach {
-//      ring ⇒ ring.orders foreach matchedCacher.addCache
-//    }
+    //    matchStatus.rings foreach {
+    //      ring ⇒ ring.orders foreach matchedCacher.addCache
+    //    }
     matchStatus
 
   }

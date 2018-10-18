@@ -20,5 +20,5 @@ package org.loopring.orderbook.core.util
 
 trait MatchedCacher {
   def addCache(filledOrder: FilledOrder)
-  def getCacheInfo(orderhash:String):Option[FilledOrder]
+  def getCacheInfo(orderhash: String): Option[FilledOrder]
 }

@@ -20,7 +20,7 @@ package org.loopring.orderbook.core.actors
 
 import akka.actor.Actor
 import akka.util.Timeout
-import org.loopring.orderbook.core.util.{ DustEvaluator, OrderBookManagerHelperImpl }
+import org.loopring.orderbook.core.util._
 
 import scala.concurrent.ExecutionContext
 
@@ -30,7 +30,7 @@ class OrderBookManager(
   implicit
   timeout: Timeout,
   ec: ExecutionContext,
-  dustEvaluator: DustEvaluator) extends Actor {
+  dustEvaluator: DustEvaluator, matchedCacher: MatchedCacher) extends Actor {
 
   val manager = new OrderBookManagerHelperImpl(tokenA, tokenB)
 
