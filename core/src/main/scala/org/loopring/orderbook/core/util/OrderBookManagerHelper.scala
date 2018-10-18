@@ -21,7 +21,12 @@ package org.loopring.orderbook.core.util
 import org.loopring.orderbook.lib.math.Rational
 
 trait OrderBookManagerHelper {
+  //添加订单并确定深度价格
   def matchOrderAndSetDepthPrice(order: OrderWithAvailableStatus): MatchStatus
+  //更新token的价格
   def updateTokenPricesOfEth(prices: Map[String, Rational])
-  def updateUsedEth(usedEth: BigInt)
+  //执行合约需要使用的eth，主要是gasprice的价格一起的变化
+  def updateGasPrice(gasPrice: BigInt)
+  //重新匹配隐藏部分的订单
+  def rematchHidedOrders()
 }

@@ -235,7 +235,7 @@ class OrderBookManagerHelperImpl(
 
   override def updateTokenPricesOfEth(prices: Map[String, Rational]): Unit = this.tokenPricesOfEth = prices
 
-  override def updateUsedEth(usedEth: BigInt): Unit = this.usedEth = Rational(usedEth)
+  override def updateGasPrice(gasPrice: BigInt): Unit = this.usedEth = Rational(gasPrice) //todo:
 
   //决定是否匹配，并给出深度价格
   override def matchOrderAndSetDepthPrice(order: OrderWithAvailableStatus): MatchStatus = {
