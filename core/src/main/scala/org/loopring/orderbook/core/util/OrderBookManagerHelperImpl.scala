@@ -239,7 +239,7 @@ class OrderBookManagerHelperImpl(
 
   override def rematchHidedOrders(): Unit = ???
 
-  override def blockedRing(ringhash: String): Unit = ???
+  override def blockedRing(ringhash: String): Unit = matchedCacher.delCache(ringhash)
 
   //决定是否匹配，并给出深度价格
   override def matchOrderAndSetDepthPrice(order: OrderWithAvailableStatus): MatchStatus = {
