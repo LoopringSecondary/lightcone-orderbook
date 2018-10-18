@@ -273,7 +273,7 @@ class OrderWithAvailableStatus(order: OrderForMatch) {
  */
 class OrderBookManagerHelperImpl(
   tokenA: String,
-  tokenB: String)(implicit dustEvaluator: DustEvaluator) {
+  tokenB: String)(implicit dustEvaluator: DustEvaluator, matchedCacher: MatchedCacher) extends OrderBookManagerHelper {
   var tokenAOrderBook = new OrderBook()
   var tokenBOrderBook = new OrderBook()
 
@@ -287,8 +287,13 @@ class OrderBookManagerHelperImpl(
 
   //决定是否匹配，并给出深度价格
   def matchOrderAndSetDepthPrice(order: OrderWithAvailableStatus) = {
-    //    var depthEvents = mutable.Set[DepthEvent]()
-    //    var otherDepthEvents = mutable.Set[DepthEvent]()
+    //todo:cache暂未实现
+//    matchedCacher.getCacheInfo(order.rawOrder.hash) match {
+//      case None ⇒
+//      case Some(filledOrder) ⇒
+//        order.availableAmountS = order.availableAmountS - filledOrder.filledAmountS
+//        order.availableAmountB = order.rawOrder.getAvailableAmountB(order.availableAmountS)
+//    }
 
     val (otherOrderbook, orderbook) = if (order.rawOrder.tokenS.equalsIgnoreCase(tokenA)) {
       (tokenBOrderBook, tokenAOrderBook)
@@ -380,9 +385,11 @@ class OrderBookManagerHelperImpl(
 
     }
 
-    //
-    //    println(matchStatus)
-    //todo:
+    //todo:cache暂未实现
+//    matchStatus.rings foreach {
+//      ring ⇒ ring.orders foreach matchedCacher.addCache
+//    }
+    matchStatus
 
   }
 
@@ -394,25 +401,25 @@ class OrderBookManagerHelperImpl(
     val availableAmountB2 = order2.availableAmountB
 
     val ring = if (order1.availableAmountS > availableAmountB2) {
-      var lrcFee1 = order1.availableFee
-      val lrcFee1Tmp = rawOrder1.fee.asRational * availableAmountB2 / rawOrder1.amountS.asRational
-      if (lrcFee1Tmp < lrcFee1) {
-        lrcFee1 = lrcFee1Tmp
+      var fee1 = order1.availableFee
+      val fee1Tmp = rawOrder1.fee.asRational * availableAmountB2 / rawOrder1.amountS.asRational
+      if (fee1Tmp < fee1) {
+        fee1 = fee1Tmp
       }
       val filledOrder1 = FilledOrder(
         rawOrder = rawOrder1,
         filledAmountS = availableAmountB2,
-        lrcFee = lrcFee1)
+        lrcFee = fee1)
       val filledOrder2 = FilledOrder(
         rawOrder = rawOrder2,
         filledAmountS = order2.availableAmountS,
         lrcFee = order2.availableFee)
-      Ring((lrcFee1 + order2.availableFee) * priceOfEth - usedEth, Seq[FilledOrder](filledOrder1, filledOrder2))
+      Ring(fee1 * priceOfEth + order2.availableFee * priceOfEth - usedEth, Seq[FilledOrder](filledOrder1, filledOrder2))
     } else {
-      var lrcFee2 = order2.availableFee
-      val lrcFee2Tmp = Rational(rawOrder2.fee.asBigInt) * availableAmountB2 / Rational(rawOrder2.amountS.asBigInt)
-      if (lrcFee2Tmp < lrcFee2) {
-        lrcFee2 = lrcFee2Tmp
+      var fee2 = order2.availableFee
+      val fee2Tmp = Rational(rawOrder2.fee.asBigInt) * availableAmountB2 / Rational(rawOrder2.amountS.asBigInt)
+      if (fee2Tmp < fee2) {
+        fee2 = fee2Tmp
       }
       val filledOrder1 = FilledOrder(
         rawOrder = rawOrder1,
@@ -421,8 +428,8 @@ class OrderBookManagerHelperImpl(
       val filledOrder2 = FilledOrder(
         rawOrder = rawOrder2,
         filledAmountS = availableAmountB1,
-        lrcFee = lrcFee2)
-      Ring((order1.availableFee + lrcFee2) * priceOfEth - usedEth, Seq[FilledOrder](filledOrder1, filledOrder2))
+        lrcFee = fee2)
+      Ring(order1.availableFee * priceOfEth + fee2 * priceOfEth - usedEth, Seq[FilledOrder](filledOrder1, filledOrder2))
     }
     ring
   }

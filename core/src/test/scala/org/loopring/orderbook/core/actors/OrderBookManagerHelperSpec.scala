@@ -47,13 +47,13 @@ class OrderBookManagerHelperSpec extends FlatSpec {
     (1 until 100).foreach {
       i ⇒ {
         val amountS = random.nextInt(100).abs + 1
-        val amountB = random.nextInt(10000).abs + 1
+        val amountB = random.nextInt(1000).abs + 1
         val order = new OrderWithAvailableStatus(OrderForMatch(
           rawOrder = Some(RawOrder(tokenS = "a", tokenB = "b", amountS = amountS.toString, amountB = amountB.toString, fee = "100", hash = "hash-" + i)),
           availableFee = "3",
           availableAmountS = amountS.toString))
         if (i % 1000 == 0) {
-          println("time5:" + (System.currentTimeMillis() - startTime))
+          println("time2:" + (System.currentTimeMillis() - startTime))
         }
         orders.add(order)
       }
@@ -68,7 +68,7 @@ class OrderBookManagerHelperSpec extends FlatSpec {
 
 
     val depths = manager.tokenAOrderBook.depths
-    println("depths:", depths)
+    println("depths:", depths.depthsWithPrices.size, depths)
     assert(depths.depthsWithSpecPrices.size == prices.size)
 
     prices map {
@@ -87,37 +87,37 @@ class OrderBookManagerHelperSpec extends FlatSpec {
   //匹配一个订单的
   //  1000000相同的订单 生成需要20s 全部装入orderbookmanger内存需要10s，与一个对手单全部匹配一遍，需要3s
   //  2000000相同的订单 生成需要54s 全部装入orderbookmanger内存需要15s，与一个对手单全部匹配一遍，需要6s
-  "one match" should "match one order" in {
-    val startTime = System.currentTimeMillis()
-    (1 until 1000000).foreach {
-      i ⇒ {
-        val order = new OrderWithAvailableStatus(OrderForMatch(
-          rawOrder = Some(RawOrder(tokenS = "a", tokenB = "b", amountS = "10", amountB = "100", fee = "100", hash = "hash-" + i)),
-          availableFee = "3",
-          availableAmountS = "10"))
-        if (i % 1000 == 0) {
-          println("time3:" + (System.currentTimeMillis() - startTime))
-        }
-        orders.add(order)
-      }
-    }
-    println("time of prepareOrders:" + (System.currentTimeMillis() - startTime))
-    orders foreach manager.matchOrderAndSetDepthPrice
-
-    println("time of adding to orderbookmanager:" + (System.currentTimeMillis() - startTime))
-    val otherOrder1 = new OrderWithAvailableStatus(
-      OrderForMatch(
-        rawOrder = Some(RawOrder(tokenS = "b", tokenB = "a", amountS = "200", amountB = "20", fee = "10", hash = "otherhash1")),
-        availableFee = "3",
-        availableAmountS = "200"))
-    val ring1 = manager.matchOrderAndSetDepthPrice(otherOrder1)
-    println("time of match one order:" + (System.currentTimeMillis() - startTime))
-
-    println(manager.tokenAOrderBook.depthPrice, manager.tokenBOrderBook.depthPrice)
-    Thread.sleep(100)
-    println(manager.tokenAOrderBook.depths, manager.tokenBOrderBook.depths)
-    //    println(manager.tokenAOrderBook.ordersWithPriceIdx, manager.tokenBOrderBook.ordersWithPriceIdx)
-  }
+  //  "one match" should "match one order" in {
+  //    val startTime = System.currentTimeMillis()
+  //    (1 until 1000000).foreach {
+  //      i ⇒ {
+  //        val order = new OrderWithAvailableStatus(OrderForMatch(
+  //          rawOrder = Some(RawOrder(tokenS = "a", tokenB = "b", amountS = "10", amountB = "100", fee = "100", hash = "hash-" + i)),
+  //          availableFee = "3",
+  //          availableAmountS = "10"))
+  //        if (i % 1000 == 0) {
+  //          println("time3:" + (System.currentTimeMillis() - startTime))
+  //        }
+  //        orders.add(order)
+  //      }
+  //    }
+  //    println("time of prepareOrders:" + (System.currentTimeMillis() - startTime))
+  //    orders foreach manager.matchOrderAndSetDepthPrice
+  //
+  //    println("time of adding to orderbookmanager:" + (System.currentTimeMillis() - startTime))
+  //    val otherOrder1 = new OrderWithAvailableStatus(
+  //      OrderForMatch(
+  //        rawOrder = Some(RawOrder(tokenS = "b", tokenB = "a", amountS = "200", amountB = "20", fee = "10", hash = "otherhash1")),
+  //        availableFee = "3",
+  //        availableAmountS = "200"))
+  //    val ring1 = manager.matchOrderAndSetDepthPrice(otherOrder1)
+  //    println("time of match one order:" + (System.currentTimeMillis() - startTime))
+  //
+  //    println(manager.tokenAOrderBook.depthPrice, manager.tokenBOrderBook.depthPrice)
+  //    Thread.sleep(100)
+  //    println(manager.tokenAOrderBook.depths, manager.tokenBOrderBook.depths)
+  //    //    println(manager.tokenAOrderBook.ordersWithPriceIdx, manager.tokenBOrderBook.ordersWithPriceIdx)
+  //  }
   //  "test1" should "depth price" in {
   //    val startTime = System.currentTimeMillis()
   //    implicit val dustEvaluator = new DustEvaluator()

@@ -18,7 +18,7 @@
 
 package org.loopring.orderbook.core.util
 
-trait OrderBookManagerHelper {
-  def matchOrderAndSetDepthPrice(order: OrderWithAvailableStatus)
-  def calReceived(order1: OrderWithAvailableStatus, order2: OrderWithAvailableStatus): Ring
+trait MatchedCacher {
+  def addCache(filledOrder: FilledOrder)
+  def getCacheInfo(orderhash:String):Option[FilledOrder]
 }
