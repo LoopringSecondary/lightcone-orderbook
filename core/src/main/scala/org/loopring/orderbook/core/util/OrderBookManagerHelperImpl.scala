@@ -85,7 +85,12 @@ class OrderBook {
   }
 
   //同时会更改深度
-  def updateOrder(order: OrderWithAvailableStatus, incrAmount: Rational, incrFee: Rational)(implicit dustEvaluator: DustEvaluator): Boolean = {
+  def updateOrder(
+    order: OrderWithAvailableStatus,
+    incrAmount: Rational,
+    incrFee: Rational)(
+    implicit
+    dustEvaluator: DustEvaluator): Boolean = {
     if (dustEvaluator.isDust(order.availableAmountS + incrAmount)) {
       this.delOrder(order.rawOrder.hash)
     } else {
@@ -211,7 +216,10 @@ class OrderWithAvailableStatus(order: OrderForMatch) {
  */
 class OrderBookManagerHelperImpl(
   tokenA: String,
-  tokenB: String)(implicit dustEvaluator: DustEvaluator, matchedCacher: MatchedCacher) extends OrderBookManagerHelper {
+  tokenB: String)(
+  implicit
+  dustEvaluator: DustEvaluator,
+  matchedCacher: MatchedCacher) extends OrderBookManagerHelper {
   var tokenAOrderBook = new OrderBook()
   var tokenBOrderBook = new OrderBook()
 
@@ -250,11 +258,12 @@ class OrderBookManagerHelperImpl(
           {
             if (!dustEvaluator.isDust(status.remainedOrder.availableAmountS)) {
               val ring = calReceived(status.remainedOrder, otherOrder)
-              var (filledOrder, otherFilledOrder) = if (ring.orders.head.rawOrder.hash.equalsIgnoreCase(status.remainedOrder.rawOrder.hash)) {
-                (ring.orders.head, ring.orders(1))
-              } else {
-                (ring.orders(1), ring.orders.head)
-              }
+              var (filledOrder, otherFilledOrder) =
+                if (ring.orders.head.rawOrder.hash.equalsIgnoreCase(status.remainedOrder.rawOrder.hash)) {
+                  (ring.orders.head, ring.orders(1))
+                } else {
+                  (ring.orders(1), ring.orders.head)
+                }
               //todo：需要确定隐藏的价格，以及删除完全匹配的订单
               if (status.remainedOrder.updateAvailable(filledOrder.filledAmountS.negValue(), filledOrder.lrcFee.negValue())) {
                 if (otherOrderbook.updateOrder(otherOrder, otherFilledOrder.filledAmountS.negValue(), otherFilledOrder.lrcFee.negValue())) {
