@@ -6,11 +6,11 @@ import org.loopring.orderbook.proto.order.RawOrder
 import scala.collection.mutable
 
 class PriceIndex() {
-  var index = mutable.TreeMap[Rational, Set[String]]()
+  var index = mutable.TreeMap[Rational, mutable.LinkedHashSet[String]]()
 
   def add(sellPrice: Rational, rawOrder: RawOrder) = {
     index.synchronized {
-      var orderHashes = index.getOrElse(sellPrice, Set[String]())
+      var orderHashes = index.getOrElse(sellPrice, mutable.LinkedHashSet[String]())
       orderHashes = orderHashes + rawOrder.hash.toLowerCase
       index.put(sellPrice, orderHashes)
     }
@@ -18,7 +18,7 @@ class PriceIndex() {
 
   def del(sellPrice: Rational, orderhash: String) = {
     index.synchronized {
-      var orderHashes = index.getOrElse(sellPrice, Set[String]())
+      var orderHashes = index.getOrElse(sellPrice, mutable.LinkedHashSet[String]())
       orderHashes = orderHashes - orderhash.toLowerCase
       if (orderHashes.nonEmpty) {
         index.put(sellPrice, orderHashes)
