@@ -237,6 +237,10 @@ class OrderBookManagerHelperImpl(
 
   override def updateGasPrice(gasPrice: BigInt): Unit = this.usedEth = Rational(gasPrice) //todo:
 
+  override def rematchHidedOrders(): Unit = ???
+
+  override def blockedRing(ringhash: String): Unit = ???
+
   //决定是否匹配，并给出深度价格
   override def matchOrderAndSetDepthPrice(order: OrderWithAvailableStatus): MatchStatus = {
     //todo:cache暂未实现,实现后放开

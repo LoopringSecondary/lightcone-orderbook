@@ -29,4 +29,6 @@ trait OrderBookManagerHelper {
   def updateGasPrice(gasPrice: BigInt)
   //重新匹配隐藏部分的订单
   def rematchHidedOrders()
+  //
+  def blockedRing(ringhash:String)
 }
