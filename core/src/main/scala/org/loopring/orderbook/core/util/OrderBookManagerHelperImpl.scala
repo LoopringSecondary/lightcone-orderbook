@@ -223,16 +223,22 @@ class OrderBookManagerHelperImpl(
   var tokenAOrderBook = new OrderBook()
   var tokenBOrderBook = new OrderBook()
 
+  //执行合约需要的eth
   var usedEth = Rational(35, 10000)
-  var priceOfEth = Rational(5, 1000)
+  //token->eth 的价格
+  var tokenPricesOfEth = Map[String, Rational]()
 
   /*
   1、被一个单子清空掉买单池
   2、暗池与深度里的，何时重新匹配
    */
 
+  override def updateTokenPricesOfEth(prices: Map[String, Rational]): Unit = this.tokenPricesOfEth = prices
+
+  override def updateUsedEth(usedEth: BigInt): Unit = this.usedEth = Rational(usedEth)
+
   //决定是否匹配，并给出深度价格
-  def matchOrderAndSetDepthPrice(order: OrderWithAvailableStatus): MatchStatus = {
+  override def matchOrderAndSetDepthPrice(order: OrderWithAvailableStatus): MatchStatus = {
     //todo:cache暂未实现,实现后放开
     //    matchedCacher.getCacheInfo(order.rawOrder.hash) match {
     //      case None ⇒
@@ -341,7 +347,7 @@ class OrderBookManagerHelperImpl(
   }
 
   //计算收益
-  def calReceived(order1: OrderWithAvailableStatus, order2: OrderWithAvailableStatus): Ring = {
+  private def calReceived(order1: OrderWithAvailableStatus, order2: OrderWithAvailableStatus): Ring = {
     val rawOrder1 = order1.rawOrder
     val rawOrder2 = order2.rawOrder
     val availableAmountB1 = order1.availableAmountB
@@ -361,7 +367,7 @@ class OrderBookManagerHelperImpl(
         rawOrder = rawOrder2,
         filledAmountS = order2.availableAmountS,
         lrcFee = order2.availableFee)
-      Ring(fee1 * priceOfEth + order2.availableFee * priceOfEth - usedEth, Seq[FilledOrder](filledOrder1, filledOrder2))
+      Ring(fee1 * tokenPricesOfEth(rawOrder1.feeAddr) + order2.availableFee * tokenPricesOfEth(rawOrder2.feeAddr) - usedEth, Seq[FilledOrder](filledOrder1, filledOrder2))
     } else {
       var fee2 = order2.availableFee
       val fee2Tmp = Rational(rawOrder2.fee.asBigInt) * availableAmountB2 / Rational(rawOrder2.amountS.asBigInt)
@@ -376,7 +382,7 @@ class OrderBookManagerHelperImpl(
         rawOrder = rawOrder2,
         filledAmountS = availableAmountB1,
         lrcFee = fee2)
-      Ring(order1.availableFee * priceOfEth + fee2 * priceOfEth - usedEth, Seq[FilledOrder](filledOrder1, filledOrder2))
+      Ring(order1.availableFee * tokenPricesOfEth(rawOrder1.feeAddr) + fee2 * tokenPricesOfEth(rawOrder2.feeAddr) - usedEth, Seq[FilledOrder](filledOrder1, filledOrder2))
     }
     ring
   }

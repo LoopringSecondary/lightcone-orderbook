@@ -18,7 +18,10 @@
 
 package org.loopring.orderbook.core.util
 
+import org.loopring.orderbook.lib.math.Rational
+
 trait OrderBookManagerHelper {
   def matchOrderAndSetDepthPrice(order: OrderWithAvailableStatus): MatchStatus
-  def calReceived(order1: OrderWithAvailableStatus, order2: OrderWithAvailableStatus): Ring
+  def updateTokenPricesOfEth(prices: Map[String, Rational])
+  def updateUsedEth(usedEth: BigInt)
 }
